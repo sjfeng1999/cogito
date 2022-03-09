@@ -14,4 +14,4 @@ jobs:
           cmake ..
           make -j4
       - name: unit-test
-        run: ./test/unittest
+        run: ./build/test/unit_test

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "cogito/cogito.h"
+#include "cogito/cogito.cuh"
 
 namespace cogito {
 namespace general {

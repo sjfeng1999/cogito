@@ -3,12 +3,9 @@
 //
 //
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
-
-TEST(General, MAIN){
-    EXPECT_TRUE(2 / 2 == 1);
-}
+#include "unittest/general/test_elementwise.cuh"
 
 int main(){
     testing::InitGoogleTest();

@@ -20,8 +20,9 @@ TEST_P(GeneralFixture, ReduceTest){
 
     Add<float> op;
     float res = input_h[0];
-    for (int i = 0; i < size; ++i){
+    for (int i = 1; i < size; ++i){
         res = op(input_h + i, &res);
     }
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, &res, 1));
+    
 };

@@ -15,10 +15,6 @@ namespace detail {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, template<typename> class ReduceOp, int BlockDimX>
-struct BlockReduce;
-
-
-template <typename T, template<typename> class ReduceOp, int BlockDimX>
 struct BlockReduce
 {   
     static constexpr int kBlockDimX = BlockDimX;
@@ -30,6 +26,7 @@ struct BlockReduce
 
     COGITO_DEVICE 
     void operator()(T* input, T* output, int size){
+
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
         int block_offset = ctaid * kBlockDimX;
@@ -37,9 +34,14 @@ struct BlockReduce
         __shared__ T warp_aggregates[kWarpNums];
 
         int laneid = cogito::utils::get_laneid();
-        int warpid = cogito::utils::get_warpid();
+        int warpid = tid >> 5;
 
-        T val = input[tid + block_offset];
+        T val;
+        if (tid + block_offset < size) {
+            val = input[tid + block_offset];
+        } else {
+            val = ReduceOpT::kIdentity;
+        }
 
         WarpReduceT warp_op;
         T warp_res = warp_op(&val);
@@ -53,7 +55,7 @@ struct BlockReduce
             ReduceOpT op;
 
             COGITO_UNROLL
-            for (int i = 1; i < kWarpSize; ++i){
+            for (int i = 1; i < kWarpNums; ++i){
                 warp_res = op(&warp_res, &warp_aggregates[i]);
             }
             output[ctaid] = warp_res;

@@ -18,11 +18,11 @@ namespace general {
 namespace detail {
 
 
-template<typename T, template<typename> class BinaryOp, bool full = true>
+template<typename T, template<typename> class BinaryOp, int BlockDimX>
 COGITO_GLOBAL
 void ReduceSingleKernel(T* input, T* output, int size){
 
-    using BlockReduceT = BlockReduce<T, BinaryOp, 256>;
+    using BlockReduceT = BlockReduce<T, BinaryOp, BlockDimX>;
 
     BlockReduceT op;
     op(input, output, size);
@@ -64,14 +64,15 @@ struct Reduce
         dim3 blockDim(kBlockDimX, 1, 1);
 
         if (gridDimX == 1){
-            detail::ReduceSingleKernel<float, ReduceOp><<<gridDim, blockDim, 0, stream>>>(input, output, size);
+            auto func = detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX>;
+            func<<<gridDim, blockDim, 0, stream>>>(input, output, size);
         
         } else {
             T* global_workspace;
             cudaMalloc(&global_workspace, sizeof(T) * gridDimX);
 
-            detail::ReduceSingleKernel<float, ReduceOp><<<gridDim, blockDim, 0, stream>>>(input, global_workspace, size);
-            detail::ReduceFinalKernel<float, ReduceOp><<<1, 1>>>(global_workspace, output, gridDimX);
+            detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, global_workspace, size);
+            detail::ReduceFinalKernel<T, ReduceOp><<<1, 1>>>(global_workspace, output, gridDimX);
         }
         return cudaPeekAtLastError();
     }

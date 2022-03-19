@@ -27,6 +27,8 @@ struct Square {
 
 template<typename T>
 struct Add {
+    static constexpr T kIdentity = static_cast<T>(0);
+
     COGITO_HOST_DEVICE
     T operator()(T* left, T* right){
         return (*left) + (*right);
@@ -40,9 +42,9 @@ public:
 
         size = GetParam();
 
-        input_h = static_cast<float*>(malloc(sizeof(float) * size));
-        output_h = static_cast<float*>(malloc(sizeof(float) * size));
-        output_naive = static_cast<float*>(malloc(sizeof(float) * size));
+        input_h         = static_cast<float*>(malloc(sizeof(float) * size));
+        output_h        = static_cast<float*>(malloc(sizeof(float) * size));
+        output_naive    = static_cast<float*>(malloc(sizeof(float) * size));
 
         cogito::test::initTensor(input_h, size);
 
@@ -71,4 +73,4 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(GeneralPart,
                          GeneralFixture,
-                         testing::Values(32, 128, 256, 2048));
+                         testing::Values(32, 128, 255, 256, 257, 2048));

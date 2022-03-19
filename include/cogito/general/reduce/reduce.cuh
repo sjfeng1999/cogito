@@ -73,6 +73,8 @@ struct Reduce
 
             detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, global_workspace, size);
             detail::ReduceFinalKernel<T, ReduceOp><<<1, 1>>>(global_workspace, output, gridDimX);
+
+            cudaFree(global_workspace);
         }
         return cudaPeekAtLastError();
     }

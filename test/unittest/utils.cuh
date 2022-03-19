@@ -16,7 +16,7 @@ template <typename T>
 bool verifyResult(T* array1, T* array2, int size, float epsilon=1e-4f){
     float err = 0.0f;
     for (int i = 0; i < size; ++i){
-        err = static_cast<float>(array1[i] - array2[i]);
+        err = abs(static_cast<float>(array1[i] - array2[i]));
         if (err > epsilon){
             printf("Error pos:%3d  err:%.5f\n", i, err);
             return false;

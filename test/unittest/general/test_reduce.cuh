@@ -3,24 +3,25 @@
 //
 //
 
-#pragma once 
+#pragma once
 
 #include "unittest/general/fixture_general.cuh"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-TEST_P(GeneralFixture, ElementWiseTest){
+TEST_P(GeneralFixture, ReduceTest){
     
-    status = cogito::general::ElementWise<float, Square>()(input_d, output_d, size);
+    status = cogito::general::Reduce<float, Add>()(input_d, output_d, size);
     EXPECT_EQ(cudaSuccess, status);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
                                       output_d, 
-                                      size * sizeof(float), 
+                                      sizeof(float), 
                                       cudaMemcpyDeviceToHost));
 
-    Square<float> op;
+    Add<float> op;
+    float res = input_h[0];
     for (int i = 0; i < size; ++i){
-        op(input_h + i, output_naive + i);
+        res = op(input_h + i, &res);
     }
-    EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
+    EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, &res, 1));
 };

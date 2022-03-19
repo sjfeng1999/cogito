@@ -8,10 +8,12 @@
 namespace cogito {
 namespace general {
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 template<typename T, template<typename> class UnaryOp>
 struct ElementWise;
 
-template<typename T, template<typename> class UnaryOp>
+template<typename T, template<typename> class BinaryOp>
 struct Reduce;
 
 
@@ -19,3 +21,4 @@ struct Reduce;
 } // namespace cogito
 
 #include "cogito/general/elementwise/elementwise.cuh"
+#include "cogito/general/reduce/reduce.cuh"

@@ -8,6 +8,7 @@
 #include "cogito/cogito.cuh"
 #include "cogito/ptx.cuh"
 
+#include "cogito/general/general.cuh"
 #include "cogito/general/elementwise/block_level.cuh"
 
 namespace cogito {
@@ -15,17 +16,37 @@ namespace general {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class UnaryOp, int BlockDimX>
+namespace detail {
+
+
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
 COGITO_GLOBAL
 void ElementWiseKernel(T* input, T* output, int size){
 
-    using BlockElementWiseT = detail::BlockElementWise<T, UnaryOp, BlockDimX>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
 
-    BlockElementWiseT()(input, output, size);
+    BlockElementWiseT op;
+    op(input, output, size);
 }
 
 
-template<typename T, template<typename> class UnaryOp>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
+COGITO_GLOBAL
+void ElementWiseKernel(T* input, T* output, const T operand, int size){
+
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
+
+    BlockElementWiseT op;
+    op(input, output, operand, size);
+}
+
+
+} // namsespace detail
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+template<typename T, template<typename> class ElementWiseOp>
 struct ElementWise
 {   
     static constexpr int kBlockDimX = 256;
@@ -39,10 +60,21 @@ struct ElementWise
         dim3 gridDim(gridDimX, 1, 1);
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        auto func = ElementWiseKernel<T, UnaryOp, kBlockDimX>;
-        func<<<gridDim, blockDim, 0, stream>>>(input, output, size);
+        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, size);
         return cudaPeekAtLastError();
     }
+
+    cudaError_t operator()(T* input, T* output, const T& operand, int size, cudaStream_t stream = 0){
+        int gridDimX = UPPER_DIV(size, kBlockWorkload);
+        
+        dim3 gridDim(gridDimX, 1, 1);
+        dim3 blockDim(kBlockDimX, 1, 1);
+
+        // __constant__ T const_operand = operand;
+        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        return cudaPeekAtLastError();
+    }
+
 };
 
 

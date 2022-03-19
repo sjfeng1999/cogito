@@ -23,6 +23,7 @@ TEST_P(GeneralFixture, ReduceTest){
     for (int i = 1; i < size; ++i){
         res = op(input_h + i, &res);
     }
+    EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, &res, 1));
     
 };

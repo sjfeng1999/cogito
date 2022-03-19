@@ -26,6 +26,15 @@ struct Square {
 };
 
 template<typename T>
+struct Sub {
+    COGITO_HOST_DEVICE
+    void operator()(T* input, T* output, const T& operand){
+        T val = *input;
+        *output = val - operand;
+    }
+};
+
+template<typename T>
 struct Add {
     static constexpr T kIdentity = static_cast<T>(0);
 
@@ -34,6 +43,7 @@ struct Add {
         return (*left) + (*right);
     }
 };
+
 
 
 class GeneralFixture : public testing::TestWithParam<int> {
@@ -60,6 +70,7 @@ public:
         cudaFree(input_d);
         cudaFree(output_d);
     }
+    
 protected:
     float* input_h; 
     float* input_d;

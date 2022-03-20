@@ -40,6 +40,16 @@ void ElementWiseKernel(T* input, T* output, const T operand, int size){
     op(input, output, operand, size);
 }
 
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
+COGITO_GLOBAL
+void ElementWiseKernel(T* input, T* output, T* operand, int size){
+
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
+
+    BlockElementWiseT op;
+    op(input, output, *operand, size);
+}
+
 
 } // namsespace detail
 
@@ -64,13 +74,25 @@ struct ElementWise
         return cudaPeekAtLastError();
     }
 
-    cudaError_t operator()(T* input, T* output, const T& operand, int size, cudaStream_t stream = 0){
+
+    // operand is Host-Value
+    cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = 0){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        // __constant__ T const_operand = operand;
+        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        return cudaPeekAtLastError();
+    }
+
+    // operand is Device-Pointer
+    cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = 0){
+        int gridDimX = UPPER_DIV(size, kBlockWorkload);
+        
+        dim3 gridDim(gridDimX, 1, 1);
+        dim3 blockDim(kBlockDimX, 1, 1);
+
         detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
         return cudaPeekAtLastError();
     }

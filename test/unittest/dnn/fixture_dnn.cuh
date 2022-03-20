@@ -41,6 +41,7 @@ public:
 
         cudaMalloc(&input_d, sizeof(float) * size);
         cudaMalloc(&output_d, sizeof(float) * size);
+
         cudaMemcpy(input_d, input_h, sizeof(float) * size, cudaMemcpyHostToDevice);
     }
 
@@ -48,6 +49,7 @@ public:
         free(input_h);
         free(output_h);
         free(output_naive);
+
         cudaFree(input_d);
         cudaFree(output_d);
     }
@@ -65,5 +67,5 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(DNNPart,
                          DNN2dFixture,
-                         testing::Values(32, 128, 255, 256, 257, 2048));
+                         testing::Values(32, 254, 256, 258, 2048));
 

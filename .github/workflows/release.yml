@@ -13,5 +13,3 @@ jobs:
           cd build 
           cmake ..
           make -j4
-      - name: unit-test
-        run: ./build/test/unit_test

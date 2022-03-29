@@ -26,7 +26,7 @@ struct ThreadElementWise
     void operator()(T* input, T* output){
         ElementWiseT op;
 
-        COGITO_UNROLL
+        COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kVecLength; ++i){
             output[i] = op(input[i]);
         }
@@ -36,7 +36,7 @@ struct ThreadElementWise
     void operator()(T* input, T* output, const T& operand){
         ElementWiseT op;
 
-        COGITO_UNROLL
+        COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kVecLength; ++i){
             output[i] = op(input[i], operand);
         }

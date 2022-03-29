@@ -24,7 +24,7 @@ struct ThreadReduce
         T res = input[0];
         ReduceOp<T> op;
         
-        COGITO_UNROLL
+        COGITO_PRAGMA_UNROLL
         for (int i = 1; i < kVecLength; ++i){
             res = op(res, input[i]);
         }

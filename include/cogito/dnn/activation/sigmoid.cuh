@@ -17,8 +17,9 @@ namespace dnn {
 namespace detail {
 
 template<typename T>
-struct Sigmoid {
-    COGITO_HOST_DEVICE
+struct Sigmoid 
+{
+    COGITO_DEVICE
     void operator()(T* input, T* output){
         T val = *input;
         *output = 1 / (1 + exp(-val));
@@ -33,10 +34,10 @@ struct Sigmoid {
 template<typename T>
 struct Sigmoid 
 {
-    using ElementWiseKernelT = general::ElementWise<T, detail::Sigmoid>;
+    using ElementWiseT = general::ElementWise<T, detail::Sigmoid>;
 
     cudaError_t operator()(T* input, T* output, int size){
-        ElementWiseKernelT op;
+        ElementWiseT op;
         return op(input, output, size);
     }
 };

@@ -54,7 +54,7 @@ struct BlockReduce
         if (tid == 0){
             ReduceOpT op;
 
-            COGITO_UNROLL
+            COGITO_PRAGMA_UNROLL
             for (int i = 1; i < kWarpNums; ++i){
                 warp_res = op(&warp_res, &warp_aggregates[i]);
             }

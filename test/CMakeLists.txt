@@ -6,6 +6,9 @@ message(STATUS ">>>>>>>> COGITO TEST")
 message(STATUS ${TEST_SRC})
 message(STATUS "<<<<<<<<")
 
+set(TARGET_ARCH "-gencode arch=compute_75,code=sm_75")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${TARGET_ARCH}")
+
 add_executable(cogito_test ${TEST_SRC})
 
 target_include_directories(cogito_test PUBLIC ${PROJECT_SOURCE_DIR}/include)

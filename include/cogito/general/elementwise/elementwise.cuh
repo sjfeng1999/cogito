@@ -64,7 +64,7 @@ struct ElementWise
     static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
     
 
-    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = 0){
+    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);
@@ -76,7 +76,7 @@ struct ElementWise
 
 
     // operand is Host-Value
-    cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = 0){
+    cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = nullptr){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);
@@ -87,7 +87,7 @@ struct ElementWise
     }
 
     // operand is Device-Pointer
-    cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = 0){
+    cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = nullptr){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);

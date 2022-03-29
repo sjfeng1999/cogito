@@ -36,7 +36,7 @@ void ReduceFinalKernel(T* input, T* output, int size){
     T val = input[0];
     BinaryOp<T> op;
 
-    COGITO_UNROLL 
+    COGITO_PRAGMA_UNROLL
     for (int i = 1; i < size; ++i){
         val = op(&val, input + i);
     }
@@ -57,7 +57,7 @@ struct Reduce
     static constexpr int kVecLength = 1;
     static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
 
-    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = 0){
+    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);

@@ -23,7 +23,7 @@ struct WarpReduce
         ReduceOpT op;
 
         T val = (*input);
-        COGITO_UNROLL
+        COGITO_PRAGMA_UNROLL
         for (int offset = 0; offset < 5; ++offset) {
             T shfl_res = __shfl_down_sync(0xffffffff, val, 1 << offset);
             val = op(&val, &shfl_res);

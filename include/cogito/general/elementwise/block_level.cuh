@@ -6,6 +6,7 @@
 #pragma once
 
 #include "cogito/cogito.cuh"
+#include "cogito/general/elementwise/thread_level.cuh"
 
 namespace cogito {
 namespace general {
@@ -14,20 +15,21 @@ namespace detail {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
-struct BlockElementWise
-{
-    static constexpr int kBlockDimX = BlockDimX;
+struct BlockElementWise {
 
-    using ElementWiseOpT = ElementWiseOp<T>;
+    static constexpr int kBlockDimX = BlockDimX;
+    static constexpr int kVecLength = 1;
+    
+    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kVecLength>;
 
     COGITO_DEVICE
     void operator()(T* input, T* output, int size){
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
-        int offset = ctaid * kBlockDimX + tid;
+        int offset = (ctaid * kBlockDimX + tid) * kVecLength;
 
         if (offset < size){
-            ElementWiseOpT op;
+            ThreadElementWiseOpT op;
             op(input + offset, output + offset);
         }
     } 
@@ -39,7 +41,7 @@ struct BlockElementWise
         int offset = ctaid * kBlockDimX + tid;
 
         if (offset < size){
-            ElementWiseOpT op;
+            ThreadElementWiseOpT op;
             op(input + offset, output + offset, operand);
         }
     } 

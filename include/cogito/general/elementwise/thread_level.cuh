@@ -15,8 +15,8 @@ namespace detail {
 
 
 template<typename T, template<typename> class ElementWiseOp, int VecLength = 1>
-struct ThreadElementWise
-{
+struct ThreadElementWise {
+
     static constexpr int kVecLength = VecLength;
     
     using ElementWiseOpT = ElementWiseOp<T>;
@@ -24,21 +24,21 @@ struct ThreadElementWise
 
     COGITO_DEVICE
     void operator()(T* input, T* output){
-        ElementWiseT op;
+        ElementWiseOpT op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kVecLength; ++i){
-            output[i] = op(input[i]);
+            op(input + i, output + i);
         }
     } 
 
     COGITO_DEVICE
     void operator()(T* input, T* output, const T& operand){
-        ElementWiseT op;
+        ElementWiseOpT op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kVecLength; ++i){
-            output[i] = op(input[i], operand);
+            op(input + i, output + i, operand);
         }
     } 
 };

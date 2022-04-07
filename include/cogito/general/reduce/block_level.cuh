@@ -33,7 +33,7 @@ struct BlockReduce
 
         __shared__ T warp_aggregates[kWarpNums];
 
-        int laneid = cogito::utils::get_laneid();
+        int laneid = cogito::utils::getLaneid();
         int warpid = tid >> 5;
 
         T val;

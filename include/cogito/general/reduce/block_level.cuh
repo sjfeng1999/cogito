@@ -15,14 +15,13 @@ namespace detail {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, template<typename> class ReduceOp, int BlockDimX>
-struct BlockReduce
-{   
+struct BlockReduce {
+
     static constexpr int kBlockDimX = BlockDimX;
     static constexpr int kWarpNums  = kBlockDimX / kWarpSize;
 
     using ReduceOpT   = ReduceOp<T>;
     using WarpReduceT = WarpReduce<T, ReduceOp>;
-
 
     COGITO_DEVICE 
     void operator()(T* input, T* output, int size){

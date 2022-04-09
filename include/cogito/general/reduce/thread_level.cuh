@@ -15,14 +15,16 @@ namespace detail {
 
 
 template<typename T, template<typename> class ReduceOp, int VecLength = 1>
-struct ThreadReduce
-{
+struct ThreadReduce {
+
     static constexpr int kVecLength = VecLength;
+    
+    using ReduceOpT = ReduceOp<T>;
 
     COGITO_DEVICE
     T operator()(T* input){
-        T res = input[0];
-        ReduceOp<T> op;
+        ReduceOpT op;
+        T val = input[0];
         
         COGITO_PRAGMA_UNROLL
         for (int i = 1; i < kVecLength; ++i){

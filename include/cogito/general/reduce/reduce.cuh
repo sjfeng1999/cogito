@@ -50,8 +50,7 @@ void ReduceFinalKernel(T* input, T* output, int size){
 
 
 template<typename T, template<typename> class ReduceOp>
-struct Reduce 
-{
+struct Reduce {
 
     static constexpr int kBlockDimX = 256;
     static constexpr int kVecLength = 1;

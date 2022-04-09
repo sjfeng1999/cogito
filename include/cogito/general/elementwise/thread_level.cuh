@@ -21,7 +21,6 @@ struct ThreadElementWise {
     
     using ElementWiseOpT = ElementWiseOp<T>;
 
-
     COGITO_DEVICE
     void operator()(T* input, T* output){
         ElementWiseOpT op;

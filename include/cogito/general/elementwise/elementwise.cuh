@@ -57,13 +57,12 @@ void ElementWiseKernel(T* input, T* output, T* operand, int size){
 
 
 template<typename T, template<typename> class ElementWiseOp>
-struct ElementWise
-{   
+struct ElementWise {
+
     static constexpr int kBlockDimX = 256;
     static constexpr int kVecLength = 1;
     static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
     
-
     cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         

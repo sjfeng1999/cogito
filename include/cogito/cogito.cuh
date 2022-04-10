@@ -22,6 +22,7 @@ constexpr int kWarpSize = 32;
 
 enum class Status {
     kSuccess,
+    kUnknownError,
 };
 
 } // namespace cogito

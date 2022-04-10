@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 #include "cogito/general/general.cuh"
 
+#include "unittest/profiler.cuh"
 #include "unittest/utils.cuh"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,6 +82,7 @@ protected:
     float* output_d;
     int size;
     cudaError_t status;
+    cogito::test::KernelProfiler profiler;
 };
 
 

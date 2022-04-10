@@ -10,9 +10,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 TEST_P(GeneralFixture, ReduceTest){
-    
-    status = cogito::general::Reduce<float, Add>()(input_d, output_d, size);
-    EXPECT_EQ(cudaSuccess, status);
+
+    using TestReduceOpT = cogito::general::Reduce<float, Add>;
+
+    profiler.profile<TestReduceOpT, float*, float*, int>(input_d, output_d, size);
+    TestReduceOpT()(input_d, output_d, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
                                       output_d, 
                                       sizeof(float), 

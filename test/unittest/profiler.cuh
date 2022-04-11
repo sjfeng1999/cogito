@@ -31,6 +31,10 @@ public:
     template<typename KernelOp, typename... Args>
     Status profile(Args... args){
         
+        Status res = Status::kSuccess;
+
+#ifdef COGITO_KERNEL_PROFILER 
+
         KernelOp op;
         float elapsed = 0;
 
@@ -52,9 +56,15 @@ public:
             avgVal += elapsed;
         }
         avgVal /= kRepeatTimes;
+        res = (status == cudaSuccess) ? Status::kSuccess : Status::kUnknownError;
 
-        printf("    Elapsed > min = %5.2f   max = %5.2f   avg = %5.2f", minVal, maxVal, avgVal);
-        return status == cudaSuccess ? Status::kSuccess : Status::kUnknownError;
+        if (res == Status::kSuccess){
+            printf("    Elapsed > min = %5.2f ms   max = %5.2f ms   avg = %5.2f ms\n", minVal, maxVal, avgVal);
+        }
+
+#endif // COGITO_KERNEL_PROFILER 
+
+        return res;
     }
 };
 

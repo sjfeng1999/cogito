@@ -81,11 +81,11 @@ protected:
     float* output_h;
     float* output_d;
     int size;
-    cudaError_t status;
+    cogito::Status status;
     cogito::test::KernelProfiler profiler;
 };
 
 
 INSTANTIATE_TEST_SUITE_P(GeneralPart,
                          GeneralFixture,
-                         testing::Values(32, 255, 256, 257, 2048));
+                         testing::Values(32, 255, 256, 257, 4096));

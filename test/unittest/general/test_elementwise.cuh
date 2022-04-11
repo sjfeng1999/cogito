@@ -11,8 +11,10 @@
 
 TEST_P(GeneralFixture, ElementWiseUnaryTest){
     
-    status = cogito::general::ElementWise<float, Square>()(input_d, output_d, size);
-    EXPECT_EQ(cudaSuccess, status);
+    using TestElementWiseOpT = cogito::general::ElementWise<float, Square>;
+
+    profiler.profile<TestElementWiseOpT, float*, float*, int>(input_d, output_d, size);
+    TestElementWiseOpT()(input_d, output_d, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
                                       output_d, 
                                       size * sizeof(float), 
@@ -29,9 +31,11 @@ TEST_P(GeneralFixture, ElementWiseUnaryTest){
 
 TEST_P(GeneralFixture, ElementWiseWithOperandTest){
     
+    using TestElementWiseOpT = cogito::general::ElementWise<float, Sub>;
     float operand = 24;
-    status = cogito::general::ElementWise<float, Sub>()(input_d, output_d, operand, size);
-    EXPECT_EQ(cudaSuccess, status);
+    
+    profiler.profile<TestElementWiseOpT, float*, float*, float, int>(input_d, output_d, operand, size);
+    TestElementWiseOpT()(input_d, output_d, operand, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
                                       output_d, 
                                       size * sizeof(float), 

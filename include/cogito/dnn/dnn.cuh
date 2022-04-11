@@ -10,8 +10,6 @@ namespace dnn {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-// Activation 
-
 template<typename T>
 struct Sigmoid;
 
@@ -19,9 +17,13 @@ template<typename T>
 struct Softmax;
 
 
-// Conv 
 
-template<typename T>
+enum class ConvType {
+    kImplicitGemm,
+    kWinograd,
+};
+
+template<typename T, ConvType type>
 struct Convolution2d;
 
 
@@ -40,7 +42,7 @@ struct LayerNorm2d;
 #include "cogito/dnn/activation/sigmoid.cuh"
 #include "cogito/dnn/activation/softmax.cuh"
 
-#include "cogito/dnn/conv/conv2d.cuh"
+// #include "cogito/dnn/conv/conv.cuh"
 
-#include "cogito/dnn/normalization/batchnorm2d.cuh"
-#include "cogito/dnn/normalization/layernorm2d.cuh"
+// #include "cogito/dnn/normalization/batchnorm2d.cuh"
+// #include "cogito/dnn/normalization/layernorm2d.cuh"

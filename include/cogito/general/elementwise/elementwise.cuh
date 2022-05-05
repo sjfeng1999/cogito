@@ -19,32 +19,33 @@ namespace general {
 namespace detail {
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
 COGITO_GLOBAL
 void ElementWiseKernel(T* input, T* output, int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
 
     BlockElementWiseT op;
     op(input, output, size);
 }
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
 COGITO_GLOBAL
 void ElementWiseKernel(T* input, T* output, const T operand, int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
 
     BlockElementWiseT op;
     op(input, output, operand, size);
 }
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX>
+
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
 COGITO_GLOBAL
 void ElementWiseKernel(T* input, T* output, T* operand, int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
 
     BlockElementWiseT op;
     op(input, output, *operand, size);
@@ -60,39 +61,64 @@ template<typename T, template<typename> class ElementWiseOp>
 struct ElementWise {
 
     static constexpr int kBlockDimX = 256;
-    static constexpr int kVecLength = 1;
-    static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
     
     cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
-        int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
-        dim3 gridDim(gridDimX, 1, 1);
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, size);
+        if (size % 4 == 0){
+            dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, size);
+
+        } else if (size % 2 == 0){
+            dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, size);
+
+        } else {
+            dim3 gridDim(UPPER_DIV(size, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gridDim, blockDim, 0, stream>>>(input, output, size);
+        }
         return cudaPeekAtLastError();
     }
 
 
     // operand is Host-Value
     cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = nullptr){
-        int gridDimX = UPPER_DIV(size, kBlockWorkload);
-        
-        dim3 gridDim(gridDimX, 1, 1);
+
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        if (size % 4 == 0){
+            dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+
+        } else if (size % 2 == 0){
+            dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+
+        } else {
+            dim3 gridDim(UPPER_DIV(size, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        }
         return cudaPeekAtLastError();
     }
 
     // operand is Device-Pointer
     cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = nullptr){
-        int gridDimX = UPPER_DIV(size, kBlockWorkload);
-        
-        dim3 gridDim(gridDimX, 1, 1);
+
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        if (size % 4 == 0){
+            dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+
+        } else if (size % 2 == 0){
+            dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+
+        } else {
+            dim3 gridDim(UPPER_DIV(size, kBlockDimX), 1, 1);
+            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
+        }
         return cudaPeekAtLastError();
     }
 

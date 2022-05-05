@@ -88,4 +88,4 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(GeneralPart,
                          GeneralFixture,
-                         testing::Values(32, 255, 256, 257, 4096));
+                         testing::Values(32, 254, 256, 257, 4096));

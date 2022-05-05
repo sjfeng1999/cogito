@@ -6,6 +6,7 @@
 #pragma once
 
 #include "cogito/cogito.cuh"
+#include "cogito/memory.cuh"
 
 namespace cogito {
 namespace general {
@@ -13,14 +14,14 @@ namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
-template<typename T, template<typename> class ElementWiseOp, int VecLength = 1>
+template<typename T, template<typename> class ElementWiseOp, int VecLength>
 struct ThreadElementWise {
 
+public:
     static constexpr int kVecLength = VecLength;
-    
     using ElementWiseOpT = ElementWiseOp<T>;
 
+public:
     COGITO_DEVICE
     void operator()(T* input, T* output){
         ElementWiseOpT op;

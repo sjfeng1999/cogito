@@ -67,5 +67,5 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(DNNPart,
                          DNN2dFixture,
-                         testing::Values(32, 254, 256, 258, 2048));
+                         testing::Values(32, 254, 256, 257, 2048));
 

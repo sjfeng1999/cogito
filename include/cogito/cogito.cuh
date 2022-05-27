@@ -9,6 +9,7 @@
 
 #define COGITO_GLOBAL               __global__
 #define COGITO_DEVICE               __device__ __forceinline__  
+#define COGITO_KERNEL               __global__
 #define COGITO_HOST_DEVICE          __host__ __device__ __forceinline__  
 
 #define COGITO_PRAGMA_UNROLL        #pragma unroll
@@ -28,7 +29,20 @@ constexpr int kWarpSize = 32;
 
 enum class Status {
     kSuccess,
+    kTensorShapeMismatch,
     kUnknownError,
+};
+
+
+
+template<int Val, int... Vals>
+struct Product {
+    static constexpr int value = Val * Product<Vals...>::value;
+};
+
+template<int Val>
+struct Product<Val> {
+    static constexpr int value = Val;
 };
 
 } // namespace cogito

@@ -47,3 +47,21 @@ TEST_P(GeneralFixture, ElementWiseWithOperandTest){
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
 };
+
+
+TEST_P(GeneralFixture, ElementWiseTensor){
+    
+    cogito::general::ElementWise<float, Square>()(input_tensor, output_tensor);
+
+    EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
+                                      output_tensor.data(), 
+                                      output_tensor.size() * decltype(output_tensor)::kElementSize, 
+                                      cudaMemcpyDeviceToHost));
+
+    Square<float> op;
+    for (int i = 0; i < size; ++i){
+        op(input_h + i, output_naive + i);
+    }
+    EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
+    EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
+};

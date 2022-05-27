@@ -14,12 +14,12 @@ namespace detail {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-template<typename T, template<typename> class ReduceOp, int VecLength = 1>
+template<typename T, template<typename> class ReduceOp, int ItemPerThread = 1>
 struct ThreadReduce {
 
-    static constexpr int kVecLength = VecLength;
-    
-    using ReduceOpT = ReduceOp<T>;
+    static constexpr int kItemPerThread = ItemPerThread;
+
+    using ReduceOpT     = ReduceOp<T>;
 
     COGITO_DEVICE
     T operator()(T* input){
@@ -27,11 +27,12 @@ struct ThreadReduce {
         T res = input[0];
         
         COGITO_PRAGMA_UNROLL
-        for (int i = 1; i < kVecLength; ++i){
+        for (int i = 1; i < kItemPerThread; ++i){
             res = op(res, input[i]);
         }
         return res;
     } 
+
 };
 
 } // namespace detail

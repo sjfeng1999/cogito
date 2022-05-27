@@ -13,59 +13,37 @@ namespace cogito {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, int Rank, int... Dims>
-class ShapedTensor {
+template<typename T, int... Dims>
+struct ShapedTensor {
 
 public:
-    static_assert(Rank == sizeof...(Dims));
-    static constexpr int kRank = Rank;
+    static constexpr int kRank   = sizeof...(Dims);
+    static constexpr int kDims[] = {Dims...};
+    static constexpr int kSize   = Product<Dims...>::value;
+    static constexpr int kElementSize = sizeof(T);
 
 private:
-    T* data_;
-    const int dims_[kRank] = {0};
-    int size_;
+    cogito_device_ptr T data_[kSize];
 
 public:
     ShapedTensor() = default;
-
-    T* data();
-    int size();
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T, int Rank>
-class RankedTensor {
-
-public:
-    static constexpr int kRank = Rank;
-
-private:
-    T* data_;
-    int dims_[kRank];
-    int size_;
-
-public:
-    RankedTensor();
-
+    ShapedTensor(T* data) : data_(data) {}
 
     T* data() { return data_; }
-    int size() { return size_; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-class Tensor {
+struct Tensor {
 public:
-    using value_type = T;
     static constexpr int kElementSize = sizeof(T);
-    
+
 private:
-    cogito_device_ptr T* data_;
     int rank_;
     int* dims_;
     int size_;
+    cogito_device_ptr T* data_;
 
 public:
     Tensor() = default;
@@ -74,11 +52,12 @@ public:
             size_ *= dims[i];
         }
     }
-    template<typename Element, int Rank>
-    Tensor(const RankedTensor<Element, Rank> ranked_tensor);
 
-    template<typename Element, int Rank, int... Dims>
-    Tensor(const ShapedTensor<Element, Rank, Dims...> shaped_tensor);
+    template<typename Element, int... Dims>
+    Tensor(const ShapedTensor<Element, Dims...> shaped_tensor) : data_(shaped_tensor.data()), 
+                                                                 rank_(ShapedTensor<Element, Dims...>::kRank),
+                                                                 // dims_(ShapedTensor<Element, Dims...>::kDims),
+                                                                 size_(ShapedTensor<Element, Dims...>::kSize) {}
 
     T* data() { return data_; }
     int size() { return size_; }
@@ -87,11 +66,19 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-Tensor<T> make_Tensor(T* data, int rank, int* dims) {
-    Tensor<T> tensor(data, rank, dims);
-    return tensor;
+constexpr Tensor<T> make_Tensor(T* data, int rank, int* dims) {
+    return Tensor<T>(data, rank, dims);
 }
 
+template<typename T, int... Dims>
+constexpr ShapedTensor<T, Dims...> make_ShapedTensor(T* data) {
+    return ShapedTensor<T, Dims...>(data);
+}
+
+template<int dim, typename T, int... Dims>
+constexpr int get_dims(ShapedTensor<T, Dims...> tensor) {
+    return ShapedTensor<T, Dims...>::kDims[dim];
+}
 
 
 } // namespace cogito

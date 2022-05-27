@@ -9,15 +9,13 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-TEST_P(GeneralFixture, ReduceTest){
+TEST_P(GeneralFixture, ReduceTensor){
+    
+    cogito::general::Reduce<float, Add>()(input_tensor, output_tensor);
 
-    using TestReduceOpT = cogito::general::Reduce<float, Add>;
-
-    profiler.profile<TestReduceOpT, float*, float*, int>(input_d, output_d, size);
-    TestReduceOpT()(input_d, output_d, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, 
-                                      output_d, 
-                                      sizeof(float), 
+                                      output_tensor.data(), 
+                                      output_tensor.size() * decltype(output_tensor)::kElementSize, 
                                       cudaMemcpyDeviceToHost));
 
     Add<float> op;

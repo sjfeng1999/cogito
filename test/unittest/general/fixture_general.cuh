@@ -10,6 +10,7 @@
 #include "cuda_runtime.h"
 
 #include "gtest/gtest.h"
+#include "cogito/tensor.cuh"
 #include "cogito/general/general.cuh"
 
 #include "unittest/profiler.cuh"
@@ -64,6 +65,9 @@ public:
         cudaMalloc(&input_d, sizeof(float) * size);
         cudaMalloc(&output_d, sizeof(float) * size);
         cudaMemcpy(input_d, input_h, sizeof(float) * size, cudaMemcpyHostToDevice);
+
+        input_tensor  = cogito::make_Tensor<float>(input_d, 1, &size);
+        output_tensor = cogito::make_Tensor<float>(output_d, 1, &size);
     }
 
     void TearDown() override {
@@ -81,6 +85,8 @@ protected:
     float* output_h;
     float* output_d;
     int size;
+    cogito::Tensor<float> input_tensor;
+    cogito::Tensor<float> output_tensor;
     cogito::Status status;
     cogito::test::KernelProfiler profiler;
 };

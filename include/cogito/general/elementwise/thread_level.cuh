@@ -6,7 +6,6 @@
 #pragma once
 
 #include "cogito/cogito.cuh"
-#include "cogito/memory.cuh"
 
 namespace cogito {
 namespace general {

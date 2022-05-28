@@ -1,4 +1,4 @@
-# Cogito GPU 
+# Cogito ( A simple header-only cuda library (easy version of cub & cutlass))
 
 ![](https://img.shields.io/github/workflow/status/sjfeng1999/cogito/release)
 
@@ -8,7 +8,6 @@
 - [x] ElementWise
 - [x] Reduce
 - [ ] Scan
-- [ ] 
    
 ## BLAS
 

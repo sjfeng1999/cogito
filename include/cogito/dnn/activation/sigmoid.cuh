@@ -20,7 +20,7 @@ template<typename T>
 struct Sigmoid 
 {
     COGITO_DEVICE
-    void operator()(T* input, T* output){
+    void operator()(const T* input, T* output){
         T val = *input;
         *output = 1 / (1 + exp(-val));
     }

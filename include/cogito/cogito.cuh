@@ -18,8 +18,13 @@
 #define UPPER_DIV(x, y)             (((x) + (y) - 1) / (y))
 
 
-#define cogito_device_ptr
 #define cogito_host_ptr
+
+#define cogito_device_ptr
+#define cogito_device_reg
+
+#define cogito_shared_mem
+#define cogito_shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

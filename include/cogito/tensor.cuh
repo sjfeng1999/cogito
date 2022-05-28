@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <utility>
+#include <type_traits>
 #include "cogito/cogito.cuh"
 
 namespace cogito {
@@ -15,7 +16,6 @@ namespace cogito {
 
 template<typename T, int... Dims>
 struct ShapedTensor {
-
 public:
     static constexpr int kRank   = sizeof...(Dims);
     static constexpr int kDims[] = {Dims...};
@@ -27,9 +27,34 @@ private:
 
 public:
     ShapedTensor() = default;
-    ShapedTensor(T* data) : data_(data) {}
+    ShapedTensor(T* data) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kSize; ++i) {
+            data_[i] = data[i];
+        }
+    }
 
+    COGITO_DEVICE 
+    T& operator[](int pos) { return data_[pos]; }
+
+    COGITO_DEVICE 
+    const T& operator[](int pos) const { return data_[pos]; }
+
+    COGITO_DEVICE
     T* data() { return data_; }
+
+    template<int pos>
+    COGITO_DEVICE
+    T get() { return data_[pos]; }
+
+    template<int Start = 0, int Length = kSize>
+    COGITO_DEVICE
+    void load(const T* ptr) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = Start; i < Start + Length; ++i) {
+            data_[i] = *(ptr + i);
+        }
+    }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,5 +105,9 @@ constexpr int get_dims(ShapedTensor<T, Dims...> tensor) {
     return ShapedTensor<T, Dims...>::kDims[dim];
 }
 
+template<int pos, typename T, int... Dims>
+constexpr int& get(ShapedTensor<T, Dims...> tensor) {
+    return tensor.data()[pos];
+}
 
 } // namespace cogito

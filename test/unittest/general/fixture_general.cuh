@@ -21,9 +21,14 @@
 template<typename T>
 struct Square {
     COGITO_HOST_DEVICE
-    void operator()(T* input, T* output){
+    void operator()(const T* input, T* output){
         T val = *input;
         *output = val * val;
+    }
+
+    COGITO_HOST_DEVICE
+    T operator()(const T& input){
+        return input * input;
     }
 };
 
@@ -32,7 +37,7 @@ struct Add {
     static constexpr T kIdentity = static_cast<T>(0);
 
     COGITO_HOST_DEVICE
-    T operator()(T* left, T* right){
+    T operator()(const T* left, T* right){
         return (*left) + (*right);
     }
 };
@@ -42,7 +47,7 @@ template<typename T>
 struct Sub
 {
     COGITO_HOST_DEVICE
-    void operator()(T* input, T* output, const T& operand){
+    void operator()(const T* input, T* output, const T& operand){
         T val = *input;
         *output = (val - operand);
     }
@@ -94,4 +99,4 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(GeneralPart,
                          GeneralFixture,
-                         testing::Values(32, 254, 256, 257, 4096));
+                         testing::Values(32, 252, 256, 257, 4096));

@@ -19,33 +19,33 @@ namespace general {
 namespace detail {
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
-COGITO_GLOBAL
-void ElementWiseKernel(T* input, T* output, int size){
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
+COGITO_KERNEL
+void ElementWiseKernel(const T* input, T* output, const int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
     BlockElementWiseT op;
     op(input, output, size);
 }
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
-COGITO_GLOBAL
-void ElementWiseKernel(T* input, T* output, const T operand, int size){
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
+COGITO_KERNEL
+void ElementWiseKernel(const T* input, T* output, const T operand, const int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
     BlockElementWiseT op;
     op(input, output, operand, size);
 }
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength = 1>
-COGITO_GLOBAL
-void ElementWiseKernel(T* input, T* output, T* operand, int size){
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
+COGITO_KERNEL
+void ElementWiseKernel(const T* input, T* output, T* operand, const int size){
 
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, VecLength>;
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
     BlockElementWiseT op;
     op(input, output, *operand, size);
@@ -62,6 +62,17 @@ struct ElementWise {
 
     static constexpr int kBlockDimX = 256;
     
+    Status operator()(Tensor<T>& input, Tensor<T>& output, cudaStream_t stream = nullptr) {
+        if (input.size() != output.size()) {
+            return Status::kTensorShapeMismatch;
+        }
+
+        dim3 blockDim(kBlockDimX, 1, 1);
+        dim3 gridDim(UPPER_DIV(input.size(), kBlockDimX), 1, 1);
+        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gridDim, blockDim, 0, stream>>>(input.data(), output.data(), input.size());
+        return Status::kSuccess;
+    }
+
     cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
         
         dim3 blockDim(kBlockDimX, 1, 1);

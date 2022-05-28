@@ -6,6 +6,7 @@
 #pragma once
 
 #include "cogito/cogito.cuh"
+#include "cogito/common/ldst.cuh"
 #include "cogito/general/elementwise/thread_level.cuh"
 
 namespace cogito {
@@ -14,33 +15,36 @@ namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int VecLength>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread>
 struct BlockElementWise {
-
 public:
-    static constexpr int kBlockDimX = BlockDimX;
-    static constexpr int kVecLength = VecLength;
-    
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kVecLength>;
+    static constexpr int kBlockDimX     = BlockDimX;
+    static constexpr int kItemPerThread = ItemPerThread;
+    static constexpr int kBlockWorkload = kBlockDimX * kItemPerThread;
+
+    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemPerThread>;
 
 public:
     COGITO_DEVICE
-    void operator()(T* input, T* output, int size){
+    void operator()(const T* input, T* output, const int size){
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kVecLength;
+        int offset = (ctaid * kBlockDimX + tid) * kItemPerThread;
 
-        if (offset < size){
+        ShapedTensor<T, kItemPerThread> tensor;
+        ThreadLoad<T, kItemPerThread>::load(tensor, input + offset, static_cast<bool>(offset < size));
+        {
             ThreadElementWiseOpT op;
-            op(input + offset, output + offset);
+            op(tensor, tensor);
         }
+        ThreadStore<T, kItemPerThread>::store(tensor, output + offset, static_cast<bool>(offset < size));
     } 
 
     COGITO_DEVICE
-    void operator()(T* input, T* output, const T& operand, int size){
+    void operator()(const T* input, T* output, const T& operand, const int size){
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kVecLength;
+        int offset = (ctaid * kBlockDimX + tid) * kItemPerThread;
 
         if (offset < size){
             ThreadElementWiseOpT op;

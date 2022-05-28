@@ -7,17 +7,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-#define COGITO_GLOBAL               __global__
-#define COGITO_DEVICE               __device__ __forceinline__  
-#define COGITO_KERNEL               __global__
-#define COGITO_HOST_DEVICE          __host__ __device__ __forceinline__  
+#define COGITO_GLOBAL                       __global__
+#define COGITO_KERNEL                       __global__
+#define COGITO_DEVICE                       __device__ __forceinline__  
+#define COGITO_HOST_DEVICE                  __host__ __device__ __forceinline__  
 
-#define COGITO_PRAGMA_UNROLL        #pragma unroll
-#define COGITO_LAUNCH_BOUND(n)      __launch__bounds__(n)
+#define COGITO_PRAGMA_UNROLL                #pragma unroll
+#define COGITO_PRAGMA_NO_UNROLL             #pragma unroll 1
+#define COGITO_LAUNCH_BOUND(n)              __launch__bounds__(n)
 
-#define UPPER_DIV(x, y)             (((x) + (y) - 1) / (y))
+#define UPPER_DIV(x, y)                     (((x) + (y) - 1) / (y))
 
 
+#define cogito_host_val
 #define cogito_host_ptr
 
 #define cogito_device_ptr
@@ -25,6 +27,9 @@
 
 #define cogito_shared_mem
 #define cogito_shared_ptr
+
+#define cogito_const_mem
+#define cogito_const_ptr
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,6 +44,9 @@ enum class Status {
 };
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace mp {
 
 template<int Val, int... Vals>
 struct Product {
@@ -50,4 +58,11 @@ struct Product<Val> {
     static constexpr int value = Val;
 };
 
+template<int Val>
+struct IsPow2 {
+    static constexpr int value = (Val & Val - 1) == 0;
+};
+
+
+} // namesapce mp
 } // namespace cogito

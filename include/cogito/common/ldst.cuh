@@ -37,10 +37,7 @@ public:
     COGITO_DEVICE
     static void store(const ShapedTensor<T, kItemPerThread>& tensor, T* ptr, bool valid) {
         if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = 0; i < kBlockSize; ++i) {
-                *(ptr + i) = tensor[i];
-            }
+            tensor.store<0, kItemPerThread>(ptr);
         }
     }
 };

@@ -48,6 +48,17 @@ enum class Status {
 
 namespace mp {
 
+template<int Val>
+struct Int2Type {
+    static constexpr int value = Val;
+};
+
+template<int Start, int End>
+struct Range2Type {
+    static constexpr int start = Start;
+    static constexpr int end   = End;
+};
+
 template<int Val, int... Vals>
 struct Product {
     static constexpr int value = Val * Product<Vals...>::value;

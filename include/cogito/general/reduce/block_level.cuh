@@ -14,36 +14,38 @@ namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T, template<typename> class ReduceOp, int BlockDimX>
+template <typename T, template<typename> class ReduceOp, int BlockDimX, int ItemsPerThread>
 struct BlockReduce {
+public:
+    static constexpr int kBlockDimX      = BlockDimX;
+    static constexpr int kWarpNums       = kBlockDimX / kWarpSize;
+    static constexpr int kItemsPerThread = ItemsPerThread;
+    using ReduceOpT     = ReduceOp<T>;
+    using WarpReduceT   = WarpReduce<T, ReduceOp, kItemsPerThread>;
+    using ShapedTensorT = ShapedTensor<T, kItemsPerThread>;
 
-    static constexpr int kBlockDimX = BlockDimX;
-    static constexpr int kWarpNums  = kBlockDimX / kWarpSize;
-
-    using ReduceOpT   = ReduceOp<T>;
-    using WarpReduceT = WarpReduce<T, ReduceOp>;
-
+public:
     COGITO_DEVICE 
     void operator()(T* input, T* output, int size){
-
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
         int block_offset = ctaid * kBlockDimX;
 
-        __shared__ T warp_aggregates[kWarpNums];
+        ShapedTensorT input_tensor;
+        const T identity = ReduceOpT::kIdentity;
+        ThreadLdSt<T, kItemsPerThread>::load(input_tensor, input + block_offset + tid, (tid + block_offset < size));
+        ThreadLdSt<T, kItemsPerThread>::load(input_tensor, identity,      !(tid + block_offset < size));
+
+        T warp_res;
+        {
+            WarpReduceT warp_op;
+            warp_res = warp_op(input_tensor);
+        }
 
         int laneid = cogito::utils::getLaneid();
         int warpid = tid >> 5;
 
-        T val;
-        if (tid + block_offset < size) {
-            val = input[tid + block_offset];
-        } else {
-            val = ReduceOpT::kIdentity;
-        }
-
-        WarpReduceT warp_op;
-        T warp_res = warp_op(&val);
+        __shared__ T warp_aggregates[kWarpNums];
 
         if (laneid == 0){
             warp_aggregates[warpid] = warp_res;
@@ -55,7 +57,7 @@ struct BlockReduce {
 
             COGITO_PRAGMA_UNROLL
             for (int i = 1; i < kWarpNums; ++i){
-                warp_res = op(&warp_res, &warp_aggregates[i]);
+                warp_res = op(warp_res, warp_aggregates[i]);
             }
             output[ctaid] = warp_res;
         }

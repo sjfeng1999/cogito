@@ -5,34 +5,31 @@
 
 #pragma once
 
-#include "cogito/cogito.cuh"
-
 namespace cogito {
 namespace general {
 namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
-template<typename T, template<typename> class ReduceOp, int ItemPerThread = 1>
+template<typename T, template<typename> class ReduceOp, int ItemsPerThread>
 struct ThreadReduce {
-
-    static constexpr int kItemPerThread = ItemPerThread;
-
+public:
+    static constexpr int kItemsPerThread = ItemsPerThread;
     using ReduceOpT     = ReduceOp<T>;
+    using ShapedTensorT = ShapedTensor<T, kItemsPerThread>;
 
+public:
     COGITO_DEVICE
-    T operator()(T* input){
+    T operator()(const ShapedTensorT& input_tensor){
         ReduceOpT op;
-        T res = input[0];
+        T res = input_tensor[0];
         
         COGITO_PRAGMA_UNROLL
-        for (int i = 1; i < kItemPerThread; ++i){
-            res = op(res, input[i]);
+        for (int i = 1; i < kItemsPerThread; ++i){
+            res = op(res, input_tensor[i]);
         }
         return res;
     } 
-
 };
 
 } // namespace detail

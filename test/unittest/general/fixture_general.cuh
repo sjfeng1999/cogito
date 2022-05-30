@@ -21,38 +21,27 @@
 template<typename T>
 struct Square {
     COGITO_HOST_DEVICE
-    void operator()(const T* input, T* output){
-        T val = *input;
-        *output = val * val;
-    }
-
-    COGITO_HOST_DEVICE
     T operator()(const T& input){
         return input * input;
     }
 };
 
 template<typename T>
-struct Add {
-    static constexpr T kIdentity = static_cast<T>(0);
-
+struct Sub {
     COGITO_HOST_DEVICE
-    T operator()(const T* left, T* right){
-        return (*left) + (*right);
+    T operator()(const T& input, const T& operand){
+        return input - operand;
     }
 };
-
 
 template<typename T>
-struct Sub
-{
+struct Add {
+    static constexpr T kIdentity = static_cast<T>(0);
     COGITO_HOST_DEVICE
-    void operator()(const T* input, T* output, const T& operand){
-        T val = *input;
-        *output = (val - operand);
+    T operator()(const T& left, const T& right){
+        return left + right;
     }
 };
-
 
 
 class GeneralFixture : public testing::TestWithParam<int> {

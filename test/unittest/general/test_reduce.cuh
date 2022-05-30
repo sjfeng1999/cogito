@@ -21,7 +21,7 @@ TEST_P(GeneralFixture, ReduceTensor){
     Add<float> op;
     float res = input_h[0];
     for (int i = 1; i < size; ++i){
-        res = op(input_h + i, &res);
+        res = op(input_h[i], res);
     }
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, &res, 1));

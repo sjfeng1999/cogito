@@ -6,19 +6,35 @@ message(STATUS ">>>>>>>> COGITO TEST")
 message(STATUS ${TEST_SRC})
 message(STATUS "<<<<<<<<")
 
+
 set(TARGET_ARCH "-gencode arch=compute_75,code=sm_75")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${TARGET_ARCH}")
+set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} ${TARGET_ARCH}")
 
 add_executable(cogito_test ${TEST_SRC})
 
-target_include_directories(cogito_test PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_include_directories(cogito_test PUBLIC ${CMAKE_SOURCE_DIR}/test)
-target_include_directories(cogito_test PUBLIC thirdparty/googletest/include)
+target_include_directories(cogito_test 
+  PUBLIC 
+    ${PROJECT_SOURCE_DIR}/include 
+    ${PROJECT_SOURCE_DIR}/test
+    thirdparty/googletest/include
+)
 
-target_link_libraries(cogito_test gtest)
+target_compile_features(cogito_test
+  PRIVATE
+    cxx_std_14
+)
 
-set_target_properties(cogito_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_target_properties(cogito_test PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(cogito_test PROPERTIES LINKER_LANGUAGE CUDA)
+target_link_libraries(cogito_test 
+  PRIVATE
+    gtest 
+    cublas
+)
+
+set_target_properties(cogito_test 
+  PROPERTIES 
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+    LINKER_LANGUAGE CUDA
+)
 
 

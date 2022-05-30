@@ -5,50 +5,37 @@
 
 #pragma once
 
-#include "cogito/cogito.cuh"
-#include "cogito/tensor.cuh"
-
 namespace cogito {
 namespace general {
 namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int ItemPerThread>
+template<typename T, template<typename> class ElementWiseOp, int ItemsPerThread>
 struct ThreadElementWise {
 public:
-    static constexpr int kItemPerThread = ItemPerThread;
-    using ShapedTensorT  = ShapedTensor<T, kItemPerThread>;
+    static constexpr int kItemsPerThread = ItemsPerThread;
     using ElementWiseOpT = ElementWiseOp<T>;
+    using ShapedTensorT  = ShapedTensor<T, kItemsPerThread>;
 
 public:
-    COGITO_DEVICE
-    void operator()(const T* input, T* output){
-        ElementWiseOpT op;
-
-        COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kItemPerThread; ++i){
-            op(input + i, output + i);
-        }
-    } 
-
-    COGITO_DEVICE
-    void operator()(const T* input, T* output, const T& operand){
-        ElementWiseOpT op;
-
-        COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kItemPerThread; ++i){
-            op(input + i, output + i, operand);
-        }
-    } 
-
     COGITO_DEVICE
     void operator()(const ShapedTensorT& input_tensor, ShapedTensorT& output_tensor){
         ElementWiseOpT op;
 
         COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kItemPerThread; ++i){
-            op(&input_tensor[i], &output_tensor[i]);
+        for (int i = 0; i < kItemsPerThread; ++i){
+            output_tensor[i] = op(input_tensor[i]);
+        }
+    } 
+
+    COGITO_DEVICE
+    void operator()(const ShapedTensorT& input_tensor, ShapedTensorT& output_tensor, const T& operand){
+        ElementWiseOpT op;
+
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kItemsPerThread; ++i){
+            output_tensor[i] = op(input_tensor[i], operand);
         }
     } 
 };

@@ -22,7 +22,7 @@ TEST_P(GeneralFixture, ElementWiseUnaryTest){
 
     Square<float> op;
     for (int i = 0; i < size; ++i){
-        op(input_h + i, output_naive + i);
+        output_naive[i] = op(input_h[i]);
     }
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
@@ -42,7 +42,7 @@ TEST_P(GeneralFixture, ElementWiseWithOperandTest){
                                       cudaMemcpyDeviceToHost));
     Sub<float> op;
     for (int i = 0; i < size; ++i){
-        op(input_h + i, output_naive + i, operand);
+        output_naive[i] = op(input_h[i], operand);
     }
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
@@ -60,7 +60,7 @@ TEST_P(GeneralFixture, ElementWiseTensor){
 
     Square<float> op;
     for (int i = 0; i < size; ++i){
-        op(input_h + i, output_naive + i);
+        output_naive[i] = op(input_h[i]);
     }
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));

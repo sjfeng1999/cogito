@@ -15,41 +15,48 @@ namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize, int stripSize = 1>
 struct BlockElementWise {
 public:
-    static constexpr int kBlockDimX     = BlockDimX;
-    static constexpr int kItemPerThread = ItemPerThread;
-    static constexpr int kBlockWorkload = kBlockDimX * kItemPerThread;
-
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemPerThread>;
+    static constexpr int kBlockDimX      = BlockDimX;
+    static constexpr int kBlockSize      = blockSize;
+    static constexpr int kStripSize      = stripSize;
+    static constexpr int kItemsPerThread = kBlockSize * kStripSize;
+    static constexpr int kBlockWorkload  = kBlockDimX * kItemsPerThread;
+    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemsPerThread>;
+    using ShapedTensorT        = ShapedTensor<T, kItemsPerThread>;
 
 public:
     COGITO_DEVICE
     void operator()(const T* input, T* output, const int size){
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kItemPerThread;
+        int offset = (ctaid * kBlockDimX + tid) * kItemsPerThread;
 
-        ShapedTensor<T, kItemPerThread> tensor;
-        ThreadLoad<T, kItemPerThread>::load(tensor, input + offset, static_cast<bool>(offset < size));
+        ShapedTensorT tensor;
+        // TODO (strip condition)
+        ThreadLdSt<T, kItemsPerThread>::load(tensor, input + offset, offset < size);
         {
-            ThreadElementWiseOpT op;
-            op(tensor, tensor);
+            ThreadElementWiseOpT thread_op;
+            thread_op(tensor, tensor);
         }
-        ThreadStore<T, kItemPerThread>::store(tensor, output + offset, static_cast<bool>(offset < size));
+        ThreadLdSt<T, kItemsPerThread>::store(tensor, output + offset, offset < size);
     } 
 
     COGITO_DEVICE
     void operator()(const T* input, T* output, const T& operand, const int size){
         int tid = threadIdx.x;
         int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kItemPerThread;
+        int offset = (ctaid * kBlockDimX + tid) * kItemsPerThread;
 
-        if (offset < size){
-            ThreadElementWiseOpT op;
-            op(input + offset, output + offset, operand);
+        ShapedTensorT tensor;
+        // TODO (strip condition)
+        ThreadLdSt<T, kItemsPerThread>::load(tensor, input + offset, offset < size);
+        {
+            ThreadElementWiseOpT thread_op;
+            thread_op(tensor, tensor, operand);
         }
+        ThreadLdSt<T, kItemsPerThread>::store(tensor, output + offset, offset < size);
     } 
 };
 

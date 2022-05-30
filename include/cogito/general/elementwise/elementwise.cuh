@@ -22,33 +22,30 @@ namespace detail {
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
 void ElementWiseKernel(const T* input, T* output, const int size){
-
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
-    BlockElementWiseT op;
-    op(input, output, size);
+    BlockElementWiseT block_op;
+    block_op(input, output, size);
 }
 
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
 void ElementWiseKernel(const T* input, T* output, const T operand, const int size){
-
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
-    BlockElementWiseT op;
-    op(input, output, operand, size);
+    BlockElementWiseT block_op;
+    block_op(input, output, operand, size);
 }
 
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
 void ElementWiseKernel(const T* input, T* output, T* operand, const int size){
-
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
-    BlockElementWiseT op;
-    op(input, output, *operand, size);
+    BlockElementWiseT block_op;
+    block_op(input, output, *operand, size);
 }
 
 

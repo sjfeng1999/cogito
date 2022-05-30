@@ -22,8 +22,7 @@ namespace detail {
 template<typename T, template<typename> class BinaryOp, int BlockDimX>
 COGITO_KERNEL
 void ReduceSingleKernel(T* input, T* output, int size){
-
-    using BlockReduceT = BlockReduce<T, BinaryOp, BlockDimX>;
+    using BlockReduceT = BlockReduce<T, BinaryOp, BlockDimX, 1>;
 
     BlockReduceT op;
     op(input, output, size);
@@ -39,7 +38,7 @@ void ReduceFinalKernel(T* input, T* output, int size){
 
     COGITO_PRAGMA_UNROLL
     for (int i = 1; i < size; ++i){
-        val = op(&val, input + i);
+        val = op(val, input[i]);
     }
     *output = val;
 }

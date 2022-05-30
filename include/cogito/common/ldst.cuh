@@ -18,10 +18,7 @@ template<typename T, int blockSize, int stripSize = 1>
 struct ThreadLdSt {
 public:
     static constexpr int kElementSize    = sizeof(T);
-    static_assert(mp::IsPow2<kElementSize>::value);
-    static constexpr int kItemsPer4B     =  4 / sizeof(T);
-    static constexpr int kItemsPer8B     =  8 / sizeof(T);
-    static constexpr int kItemsPer16B    = 16 / sizeof(T);
+    static_assert(mp::IsPow2<kElementSize>::value, "Invalid element size");
     static constexpr int kBlockSize      = blockSize;
     static constexpr int kStripSize      = stripSize;
     static constexpr int kItemsPerThread = kBlockSize * kStripSize;
@@ -32,14 +29,13 @@ public:
         typename std::enable_if<Length * kElementSize % 16 == 0, int>::type Factor = (Length * kElementSize >> 4)>
     COGITO_DEVICE
     static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = 0; i < Factor; ++i) {
                 float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(ptr) + i * 16);
-                tensor[Start + i * kItemsPer16B + 0 * kItemsPer4B] = reinterpret_cast<T&>(val.x);
-                tensor[Start + i * kItemsPer16B + 1 * kItemsPer4B] = reinterpret_cast<T&>(val.y);
-                tensor[Start + i * kItemsPer16B + 2 * kItemsPer4B] = reinterpret_cast<T&>(val.z);
-                tensor[Start + i * kItemsPer16B + 3 * kItemsPer4B] = reinterpret_cast<T&>(val.w);
+                *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 16) = val;
             }
         }
     }
@@ -49,12 +45,13 @@ public:
         typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
     COGITO_DEVICE
     static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = 0; i < Factor; ++i) {
                 float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(ptr) + i * 8);
-                tensor[Start + i * kItemsPer8B + 0 * kItemsPer4B] = reinterpret_cast<T&>(val.x);
-                tensor[Start + i * kItemsPer8B + 1 * kItemsPer4B] = reinterpret_cast<T&>(val.y);
+                *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 8) = val;
             }
         }
     }
@@ -63,6 +60,8 @@ public:
         typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 != 0), int>::type = 0>
     COGITO_DEVICE
     static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = Start; i < Start + Length; ++i) {
@@ -71,16 +70,29 @@ public:
         }
     }
 
+    template<int Start = 0, int Length = kItemsPerThread>
+    COGITO_DEVICE
+    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T& const_val, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
+        if (valid) {
+            COGITO_PRAGMA_UNROLL
+            for (int i = Start; i < Start + Length; ++i) {
+                tensor[i] = const_val;
+            }
+        }
+    }
+
     template<int LineSize, int rangeStart, int rangeEnd>
     COGITO_DEVICE
-    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeStart, rangeEnd>) {
+    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeStart, rangeEnd> /* unused */) {
         ThreadLdSt::load<rangeStart * kBlockSize, kBlockSize>(tensor, ptr, true);
         ThreadLdSt::stripedLoad<LineSize>(tensor, ptr + LineSize, mp::Range2Type<rangeStart + 1, rangeEnd>{});
     }
 
     template<int LineSize, int rangeEnd>
     COGITO_DEVICE
-    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeEnd, rangeEnd>) {}
+    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeEnd, rangeEnd /* unused */>) {}
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,14 +101,12 @@ public:
         typename std::enable_if<Length * kElementSize % 16 == 0, int>::type Factor = (Length * kElementSize >> 4)>
     COGITO_DEVICE
     static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = 0; i < Factor; ++i) {
-                float4 val;
-                val.x = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer16B + 0 * kItemsPer4B]);
-                val.y = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer16B + 1 * kItemsPer4B]);
-                val.z = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer16B + 2 * kItemsPer4B]);
-                val.w = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer16B + 3 * kItemsPer4B]);
+                float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 16);
                 *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(ptr) + i * 16) = val;
             } 
         }
@@ -107,12 +117,12 @@ public:
         typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
     COGITO_DEVICE
     static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = 0; i < Factor; ++i) {
-                float2 val;
-                val.x = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer8B + 0 * kItemsPer4B]);
-                val.y = reinterpret_cast<const T&>(tensor[Start + i * kItemsPer8B + 1 * kItemsPer4B]);
+                float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 8);
                 *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(ptr) + i * 8) = val;
             }
         }
@@ -122,6 +132,8 @@ public:
         typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 != 0), int>::type = 0>
     COGITO_DEVICE
     static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
+        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
+
         if (valid) {
             COGITO_PRAGMA_UNROLL
             for (int i = Start; i < Start + Length; ++i) {
@@ -130,17 +142,16 @@ public:
         }
     }
 
-
     template<int LineSize, int rangeStart, int rangeEnd>
     COGITO_DEVICE
-    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeStart, rangeEnd>) {
+    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeStart, rangeEnd> /* unused */) {
         ThreadLdSt::store<rangeStart * kBlockSize, kBlockSize>(tensor, ptr, true);
         ThreadLdSt::stripedStore<LineSize>(tensor, ptr + LineSize, mp::Range2Type<rangeStart + 1, rangeEnd>{});
     }
 
     template<int LineSize, int rangeEnd>
     COGITO_DEVICE
-    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeEnd, rangeEnd>) {}
+    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeEnd, rangeEnd> /* unused */) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

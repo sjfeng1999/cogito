@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "cogito/cogito.cuh"
-#include "cogito/blas/blas.cuh"
 #include "cogito/blas/gemm/block_level.cuh"
 
 namespace cogito {
@@ -20,33 +18,39 @@ template<typename T, MmaType type>
 struct GemmConfig {};
 
 template<>
-struct GemmConfig<float, MmaType::kLegacy>{
-    static constexpr int kBlockTileWidth = 128;
-    static constexpr int kBlockDimX = 256;
-    static constexpr MmaType kMmaType = MmaType::kLegacy;
-
+struct GemmConfig<float, MmaType::kLegacy> {
+    static constexpr int kBlockDimX       = 256;
+    static constexpr int kBlockTileWidth  = 128;
+    static constexpr int kBlockTileHeight = 128;
+    static constexpr MmaType kMmaType     = MmaType::kLegacy;
     using type = float;
 };
-
 
 template<typename GemmConfig, typename T = typename GemmConfig::type>
 COGITO_GLOBAL
 void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc) {
-
     using BlockMmaT = BlockMma<typename GemmConfig::type, GemmConfig::kMmaType>;
     using TileSrcAIteratorT = typename BlockMmaT::TileSrcAIteratorT;  
     using TileSrcBIteratorT = typename BlockMmaT::TileSrcBIteratorT;  
     using TileResIteratorT  = typename BlockMmaT::TileResIteratorT;  
 
+    __shared__ T shared_a[TileSrcAIteratorT::kSharedSize];
+    __shared__ T shared_b[TileSrcBIteratorT::kSharedSize];
+
+    int ctaid_x = blockIdx.x;
+    int ctaid_y = blockIdx.y;
+
+    T* block_A = A + ctaid_y * GemmConfig::kBlockTileHeight * lda;
+    T* block_B = B + ctaid_x * GemmConfig::kBlockTileWidth;
+    T* block_C = C + ctaid_y * GemmConfig::kBlockTileHeight * ldc + ctaid_x * GemmConfig::kBlockTileWidth;
+    
+    TileSrcAIteratorT iter_a(block_A, lda, shared_a);
+    TileSrcBIteratorT iter_b(block_B, ldb, shared_b);
+    TileResIteratorT iter_c(block_C, ldc);
+
     BlockMmaT op;
-    TileSrcAIteratorT iter_a(A, lda);
-    TileSrcBIteratorT iter_b(B, ldb);
-    TileResIteratorT iter_acc(C, ldc);
-    TileResIteratorT iter_c(C, ldc);
-
-    op(iter_acc, alpha, iter_a, iter_b, beta, iter_c);
+    op(alpha, iter_a, iter_b, beta, iter_c);
 }
-
 
 } // namsespace detail
 
@@ -55,9 +59,11 @@ void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T be
 
 template<typename T, MmaType type>
 struct Gemm {
+public:
+    using GemmConfigT = detail::GemmConfig<T, type>;
+
+public:
     cudaError_t operator()(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc, cudaStream_t stream = nullptr) {
-        
-        using GemmConfigT = detail::GemmConfig<T, type>;
 
         int gridX = UPPER_DIV(m, GemmConfigT::kBlockTileWidth);
         int gridY = UPPER_DIV(n, GemmConfigT::kBlockTileWidth);

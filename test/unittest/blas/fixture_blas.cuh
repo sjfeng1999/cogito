@@ -40,13 +40,19 @@ public:
         res_naive = static_cast<float*>(malloc(sizeof(float) * mn));
         res_std   = static_cast<float*>(malloc(sizeof(float) * mn));
 
-        // cogito::test::initTensor(input_h, size);
+        cogito::test::initTensor(A_h, mk);
+        cogito::test::initTensor(B_h, nk);
+        cogito::test::initTensor(C_h, mn);
 
         cudaMalloc(&A_d, sizeof(float) * mk);
         cudaMalloc(&B_d, sizeof(float) * nk);
         cudaMalloc(&C_d, sizeof(float) * mn);
+        cudaMalloc(&C_std, sizeof(float) * mn);
 
-        // cudaMemcpy(input_d, input_h, m * n * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(A_d, A_h, mk * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(B_d, B_h, nk * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(C_d, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(C_std, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
     }
 
     void TearDown() override {
@@ -59,15 +65,14 @@ public:
         cudaFree(A_d);
         cudaFree(B_d);
         cudaFree(C_d);
+        cudaFree(C_std);
     }
 
 protected:
     float *A_h, *B_h, *C_h; 
-    float *A_d, *B_d, *C_d;
+    float *A_d, *B_d, *C_d, *C_std;
     float *res_naive, *res_std;
-    int m;
-    int n;
-    int k;
+    int m, n, k;
     int mn, mk, nk;
     float alpha, beta;
     cudaError_t status;
@@ -76,9 +81,9 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(BlasPart,
                          BlasFixture,
-                         testing::Combine(testing::Values(256, 1024),
-                                          testing::Values(256, 1024),
-                                          testing::Values(256, 1024),
-                                          testing::Values(1.0, 0.5),
-                                          testing::Values(1.0, 2.0)));
+                         testing::Combine(testing::Values(128),
+                                          testing::Values(128),
+                                          testing::Values(128),
+                                          testing::Values(1.0),
+                                          testing::Values(1.0)));
 

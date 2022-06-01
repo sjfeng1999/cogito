@@ -7,220 +7,243 @@
 
 #include <cstdint>
 
-#include "cogito/cogito.cuh"
 #include "cogito/tensor.cuh"
+#include "cogito/ptx.cuh"
 
 namespace cogito {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, int blockSize, int stripSize = 1>
+template<typename T, LoadCachePolicy LdPolicy = LoadCachePolicy::kDefault, StoreCachePolicy StPolicy = StoreCachePolicy::kDefault>
 struct ThreadLdSt {
 public:
-    static constexpr int kElementSize    = sizeof(T);
+    static constexpr int kElementSize = sizeof(T);
     static_assert(mp::IsPow2<kElementSize>::value, "Invalid element size");
-    static constexpr int kBlockSize      = blockSize;
-    static constexpr int kStripSize      = stripSize;
-    static constexpr int kItemsPerThread = kBlockSize * kStripSize;
+    static constexpr LoadCachePolicy  kLdPolicy = LdPolicy;
+    static constexpr StoreCachePolicy kStPolicy = StPolicy;
 
 public:
     // Load by LDG/S.128
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<Length * kElementSize % 16 == 0, int>::type Factor = (Length * kElementSize >> 4)>
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Start  * kElementSize % 16 == 0) && 
+                                (Length * kElementSize % 16 == 0), int>::type Factor = (Length * kElementSize >> 4)>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = 0; i < Factor; ++i) {
-                float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(ptr) + i * 16);
-                *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 16) = val;
-            }
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Factor; ++i) {
+            // TODO (load according to cache policy)
+            float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(ptr) + i * 16);
+            *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 16) = val;
         }
     }
 
     // Load by LDG/S.64
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Length * kElementSize % 16 != 0 || Start * kElementSize % 16 != 0) &&
+                                (Start  * kElementSize %  8 == 0) &&
+                                (Length * kElementSize %  8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = 0; i < Factor; ++i) {
-                float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(ptr) + i * 8);
-                *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 8) = val;
-            }
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Factor; ++i) {
+            float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(ptr) + i * 8);
+            *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(&tensor[Start]) + i * 8) = val;
+        }
+    }
+ 
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Length * kElementSize % 16 != 0 || Start * kElementSize % 16 != 0) &&
+                                (Length * kElementSize %  8 != 0 || Start * kElementSize %  8 != 0), int>::type = 0>
+    COGITO_DEVICE
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Length; ++i) {
+            tensor[i + Start] = ptr[i];
         }
     }
 
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 != 0), int>::type = 0>
+    template<int TensorSize, int Start = 0, int Length = TensorSize>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = Start; i < Start + Length; ++i) {
-                tensor[i] = ptr[i];
-            }
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T const_val) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = Start; i < Start + Length; ++i) {
+            tensor[i] = const_val;
         }
     }
 
-    template<int Start = 0, int Length = kItemsPerThread>
-    COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T& const_val, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
 
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = Start; i < Start + Length; ++i) {
-                tensor[i] = const_val;
-            }
-        }
+    template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeStart, int RangeEnd>
+    COGITO_DEVICE
+    static void stripedLoad(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
+        ThreadLdSt::load<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
+        ThreadLdSt::stripedLoad<Start, BlockSize, LineSize>(tensor, ptr + LineSize, mp::Range2Type<RangeStart + 1, RangeEnd>{});
     }
-
-    template<int LineSize, int rangeStart, int rangeEnd>
+    template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeEnd>
     COGITO_DEVICE
-    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeStart, rangeEnd> /* unused */) {
-        ThreadLdSt::load<rangeStart * kBlockSize, kBlockSize>(tensor, ptr, true);
-        ThreadLdSt::stripedLoad<LineSize>(tensor, ptr + LineSize, mp::Range2Type<rangeStart + 1, rangeEnd>{});
+    static void stripedLoad(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
+
+    template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
+    COGITO_DEVICE
+    static void stripedLoad(ShapedTensor<T, TensorSize>& tensor, const T* ptr, const int ldg, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
+        ThreadLdSt::load<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
+        ThreadLdSt::stripedLoad<Start, BlockSize>(tensor, ptr + ldg, ldg, mp::Range2Type<RangeStart + 1, RangeEnd>{});
     }
-
-    template<int LineSize, int rangeEnd>
+    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
     COGITO_DEVICE
-    static void stripedLoad(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, mp::Range2Type<rangeEnd, rangeEnd /* unused */>) {}
+    static void stripedLoad(ShapedTensor<T, TensorSize>&, const T*, const int, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     // Store by STG/S.128
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<Length * kElementSize % 16 == 0, int>::type Factor = (Length * kElementSize >> 4)>
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Start  * kElementSize % 16 == 0) && 
+                                (Length * kElementSize % 16 == 0), int>::type Factor = (Length * kElementSize >> 4)>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = 0; i < Factor; ++i) {
-                float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 16);
-                *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(ptr) + i * 16) = val;
-            } 
-        }
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Factor; ++i) {
+            float4 val = *reinterpret_cast<const float4*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 16);
+            *reinterpret_cast<float4*>(reinterpret_cast<int8_t*>(ptr) + i * 16) = val;
+        } 
     }
 
     // Store by STG/S.64
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Length * kElementSize % 16 != 0 || Start * kElementSize % 16 != 0) &&
+                                (Start  * kElementSize %  8 == 0) &&
+                                (Length * kElementSize %  8 == 0), int>::type Factor = (Length * kElementSize >> 3)>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = 0; i < Factor; ++i) {
-                float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 8);
-                *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(ptr) + i * 8) = val;
-            }
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Factor; ++i) {
+            float2 val = *reinterpret_cast<const float2*>(reinterpret_cast<const int8_t*>(&tensor[Start]) + i * 8);
+            *reinterpret_cast<float2*>(reinterpret_cast<int8_t*>(ptr) + i * 8) = val;
         }
     }
 
-    template<int Start = 0, int Length = kItemsPerThread, 
-        typename std::enable_if<(Length * kElementSize % 16 != 0) && (Length * kElementSize % 8 != 0), int>::type = 0>
+    template<int TensorSize, int Start = 0, int Length = TensorSize, 
+        typename std::enable_if<(Length * kElementSize % 16 != 0 || Start * kElementSize % 16 != 0) &&
+                                (Length * kElementSize %  8 != 0 || Start * kElementSize %  8 != 0), int>::type = 0>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
-        static_assert(Start + Length <= kItemsPerThread, "Load size exceed tensor size");
-
-        if (valid) {
-            COGITO_PRAGMA_UNROLL
-            for (int i = Start; i < Start + Length; ++i) {
-                ptr[i] = tensor[i];
-            }
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr) {
+        static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Length; ++i) {
+            ptr[i] = tensor[Start + i];
         }
     }
 
-    template<int LineSize, int rangeStart, int rangeEnd>
-    COGITO_DEVICE
-    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeStart, rangeEnd> /* unused */) {
-        ThreadLdSt::store<rangeStart * kBlockSize, kBlockSize>(tensor, ptr, true);
-        ThreadLdSt::stripedStore<LineSize>(tensor, ptr + LineSize, mp::Range2Type<rangeStart + 1, rangeEnd>{});
-    }
 
-    template<int LineSize, int rangeEnd>
+    template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
-    static void stripedStore(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, mp::Range2Type<rangeEnd, rangeEnd> /* unused */) {}
+    static void stripedStore(const ShapedTensor<T, TensorSize>& tensor, T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
+        ThreadLdSt::store<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
+        ThreadLdSt::stripedStore<Start, BlockSize, LineSize>(tensor, ptr + LineSize, mp::Range2Type<RangeStart + 1, RangeEnd>{});
+    }
+    template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeEnd>
+    COGITO_DEVICE
+    static void stripedStore(const ShapedTensor<T, TensorSize>&, T*, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
+
+    template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
+    COGITO_DEVICE
+    static void stripedStore(const ShapedTensor<T, TensorSize>& tensor, T* ptr, const int ldg, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
+        ThreadLdSt::store<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
+        ThreadLdSt::stripedStore<Start, BlockSize>(tensor, ptr + ldg, ldg, mp::Range2Type<RangeStart + 1, RangeEnd>{});
+    }
+    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
+    COGITO_DEVICE
+    static void stripedStore(const ShapedTensor<T, TensorSize>&, T*, const int, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, int blockSize, int stripSize = 1>
+template<typename T, LoadCachePolicy LdPolicy = LoadCachePolicy::kDefault, StoreCachePolicy StPolicy = StoreCachePolicy::kDefault>
 struct WarpLdSt {
 public:
-    static constexpr int kBlockSize      = blockSize;
-    static constexpr int kStripSize      = stripSize;
-    static constexpr int kWarpLineSize   = cogito::kWarpSize * kBlockSize;
-    static constexpr int kItemsPerThread = kBlockSize * kStripSize;
+    static constexpr int kElementSize = sizeof(T);
+    static_assert(mp::IsPow2<kElementSize>::value, "Invalid element size");
+    static constexpr LoadCachePolicy  kLdPolicy = LdPolicy;
+    static constexpr StoreCachePolicy kStPolicy = StPolicy;
 
 public:
+    template<int Start, int BlockSize, int TensorSize>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, const uint32_t& mask) {
-        uint32_t tid = threadIdx.x;
-        if (((1u << tid) & mask) != 0) {
-            ThreadLdSt<T, kBlockSize, kStripSize>::stripedLoad<kWarpLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr, const uint32_t mask) {
+        int laneid = ptx::getLaneid();
+        if (((1u << laneid) & mask) != 0) {
+            ThreadLdSt<T, kLdPolicy, kStPolicy>::load<TensorSize, Start, BlockSize>(tensor, ptr + laneid * BlockSize);
         }
     }
 
+    template<int Start, int BlockSize, int TensorSize>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr) {
-        uint32_t tid = threadIdx.x;
-        ThreadLdSt<T, kBlockSize, kStripSize>::stripedLoad<kWarpLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr) {
+        int laneid = ptx::getLaneid();
+        ThreadLdSt<T, kLdPolicy, kStPolicy>::load<TensorSize, Start, BlockSize>(tensor, ptr + laneid * BlockSize);
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<int Start, int BlockSize, int TensorSize>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, const uint32_t& mask) {
-        uint32_t tid = threadIdx.x;
-        if (((1u << tid) & mask) != 0) {
-            ThreadLdSt<T, kBlockSize, kStripSize>::stripedStore<kWarpLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr, const uint32_t mask) {
+        int laneid = ptx::getLaneid();
+        if (((1u << laneid) & mask) != 0) {
+            ThreadLdSt<T, kLdPolicy, kStPolicy>::store<TensorSize, Start, BlockSize>(tensor, ptr + laneid * BlockSize);
         }
     }
 
+    template<int Start, int BlockSize, int TensorSize>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr) {
-        uint32_t tid = threadIdx.x;
-        ThreadLdSt<T, kBlockSize, kStripSize>::stripedStore<kWarpLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr) {
+        int laneid = ptx::getLaneid();
+        ThreadLdSt<T, kLdPolicy, kStPolicy>::store<TensorSize, Start, BlockSize>(tensor, ptr + laneid * BlockSize);
     }
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, int GroupSize, int blockSize, int stripSize = 1>
+template<typename T, int GroupSize, LoadCachePolicy LdPolicy = LoadCachePolicy::kDefault, StoreCachePolicy StPolicy = StoreCachePolicy::kDefault>
 struct ThreadGroupLdSt {
 public:
-    static constexpr int kGroupSize      = GroupSize;
-    static constexpr int kBlockSize      = blockSize;
-    static constexpr int kStripSize      = stripSize;
-    static constexpr int kGroupLineSize  = kGroupSize * kBlockSize;
-    static constexpr int kItemsPerThread = kBlockSize * kStripSize;
+    static constexpr int kGroupSize   = GroupSize;
+    static constexpr int kElementSize = sizeof(T);
+    static_assert(mp::IsPow2<kElementSize>::value, "Invalid element size");
+    static constexpr LoadCachePolicy  kLdPolicy = LdPolicy;
+    static constexpr StoreCachePolicy kStPolicy = StPolicy;
 
 public:
+    template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, kItemsPerThread>& tensor, const T* ptr, bool valid) {
-        if (valid) {
-            int tid = threadIdx.x;
-            ThreadLdSt<T, kBlockSize, kStripSize>::stripedLoad<kGroupLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
-        }
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        int group_id = threadIdx.x % kGroupSize;
+        ThreadLdSt<T, kLdPolicy, kStPolicy>::stripedLoad<Start, BlockSize, BlockSize * kGroupSize>(tensor, ptr + group_id * BlockSize, mp::Range2Type<RangeStart, RangeEnd>{});
     }
+    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
+    COGITO_DEVICE
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
-    static void store(const ShapedTensor<T, kItemsPerThread>& tensor, T* ptr, bool valid) {
-        if (valid) {
-            int tid = threadIdx.x;
-            ThreadLdSt<T, kBlockSize, kStripSize>::stripedStore<kGroupLineSize>(tensor, ptr + tid * kBlockSize, mp::Range2Type<0, kStripSize>{});
-        }
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        int group_id = threadIdx.x % kGroupSize;
+        ThreadLdSt<T, kLdPolicy, kStPolicy>::stripedStore<Start, BlockSize, BlockSize * kGroupSize>(tensor, ptr + group_id * BlockSize, mp::Range2Type<RangeStart, RangeEnd>{});
     }
+    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
+    COGITO_DEVICE
+    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 };
 
 } // namespace cogito

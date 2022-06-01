@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "cogito/cogito.cuh"
 #include "cogito/common/ldst.cuh"
 #include "cogito/general/elementwise/thread_level.cuh"
 
@@ -35,12 +34,16 @@ public:
 
         ShapedTensorT tensor;
         // TODO (strip condition)
-        ThreadLdSt<T, kItemsPerThread>::load(tensor, input + offset, offset < size);
+        if (offset < size) {
+            ThreadLdSt<T>::load(tensor, input + offset);
+        }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor);
         }
-        ThreadLdSt<T, kItemsPerThread>::store(tensor, output + offset, offset < size);
+        if (offset < size) {
+            ThreadLdSt<T>::store(tensor, output + offset);
+        }
     } 
 
     COGITO_DEVICE
@@ -51,12 +54,16 @@ public:
 
         ShapedTensorT tensor;
         // TODO (strip condition)
-        ThreadLdSt<T, kItemsPerThread>::load(tensor, input + offset, offset < size);
+        if (offset < size) {
+            ThreadLdSt<T>::load(tensor, input + offset);
+        }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor, operand);
         }
-        ThreadLdSt<T, kItemsPerThread>::store(tensor, output + offset, offset < size);
+        if (offset < size) {
+            ThreadLdSt<T>::store(tensor, output + offset);
+        }
     } 
 };
 

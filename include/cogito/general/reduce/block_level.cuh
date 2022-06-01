@@ -33,8 +33,12 @@ public:
 
         ShapedTensorT input_tensor;
         const T identity = ReduceOpT::kIdentity;
-        ThreadLdSt<T, kItemsPerThread>::load(input_tensor, input + block_offset + tid, (tid + block_offset < size));
-        ThreadLdSt<T, kItemsPerThread>::load(input_tensor, identity,      !(tid + block_offset < size));
+        
+        if (tid + block_offset < size) {
+            ThreadLdSt<T>::load(input_tensor, input + block_offset + tid);
+        } else {
+            ThreadLdSt<T>::load(input_tensor, identity);
+        }
 
         T warp_res;
         {
@@ -42,7 +46,7 @@ public:
             warp_res = warp_op(input_tensor);
         }
 
-        int laneid = cogito::utils::getLaneid();
+        int laneid = ptx::getLaneid();
         int warpid = tid >> 5;
 
         __shared__ T warp_aggregates[kWarpNums];

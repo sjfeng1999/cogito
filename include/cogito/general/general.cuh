@@ -16,7 +16,6 @@ struct ElementWise;
 template<typename T, template<typename> class BinaryOp>
 struct Reduce;
 
-
 } // namespace general
 } // namespace cogito
 

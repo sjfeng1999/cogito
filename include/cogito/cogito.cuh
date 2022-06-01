@@ -37,12 +37,21 @@ namespace cogito {
 
 constexpr int kWarpSize = 32;
 
-enum class Status {
+enum class Status : uint8_t {
     kSuccess,
     kTensorShapeMismatch,
     kUnknownError,
 };
 
+enum class LoadCachePolicy : uint8_t {
+    kCA,          // cache all level
+    kCG,          // cache global
+    kDefault,     
+};
+
+enum class StoreCachePolicy : uint8_t {
+    kDefault,      
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

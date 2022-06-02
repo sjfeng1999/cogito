@@ -25,10 +25,10 @@ private:
     cogito_shared_ptr T* const shared_ptr_;
     cogito_shared_ptr T* shared_ptr_offset_;
     cogito_device_ptr T* global_ptr_offset_;
+    cogito_device_reg ShapedTensor<T, 4> frag_;
     const int ldg_;
     int loop;
     int total_loop;
-    ShapedTensor<T, 4> frag_;
 
 public:
     TileSrcIterator() = delete;
@@ -67,7 +67,7 @@ public:
     }
 
     COGITO_DEVICE
-    void operator++(int){
+    void operator++(int) {
         if (kTranspose){
             global_ptr_offset_ += kTileHeight;
         } else {
@@ -78,7 +78,7 @@ public:
     }
 
     COGITO_DEVICE
-    T* shared_ptr() const{ return shared_ptr_; }
+    T* shared_ptr() const { return shared_ptr_; }
 
     COGITO_DEVICE
     bool end() { return loop == total_loop ? true : false; }
@@ -127,7 +127,7 @@ public:
 
         FragmentSrcAIteratorT frag_a(tile_a.shared_ptr());
         FragmentSrcBIteratorT frag_b(tile_b.shared_ptr());
-        FragmentResIteratorT  frag_c(tile_c.global_ptr(), tile_c.ldg());
+        FragmentResIteratorT  frag_c(beta, tile_c.global_ptr(), tile_c.ldg());
         __syncthreads();
 
         WarpMmaT op;

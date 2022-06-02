@@ -14,16 +14,14 @@
 #include "gtest/gtest.h"
 #include "cogito/blas/blas.cuh"
 
+#include "unittest/profiler.cuh"
 #include "unittest/utils.cuh"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
-class BlasFixture : public testing::TestWithParam<std::tuple<int, int, int, float, float>> 
-{
+class BlasFixture : public testing::TestWithParam<std::tuple<int, int, int, float, float>> {
 public:
     void SetUp() override {
-
         m = std::get<0>(GetParam());
         n = std::get<1>(GetParam());
         k = std::get<2>(GetParam());
@@ -76,14 +74,15 @@ protected:
     int mn, mk, nk;
     float alpha, beta;
     cudaError_t status;
+    cogito::test::KernelProfiler profiler;
 };
 
 
 INSTANTIATE_TEST_SUITE_P(BlasPart,
                          BlasFixture,
-                         testing::Combine(testing::Values(128),
-                                          testing::Values(128),
-                                          testing::Values(128),
+                         testing::Combine(testing::Values(2048),
+                                          testing::Values(2048),
+                                          testing::Values(2048),
                                           testing::Values(1.0),
-                                          testing::Values(1.0)));
+                                          testing::Values(0.6)));
 

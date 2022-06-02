@@ -24,20 +24,18 @@ public:
 
 private:
     cogito_shared_ptr T* ptr_;
+    cogito_device_reg ShapedTensor<T, 4> frag_[2];
     int strip_offset;
     int block_offset;
-    ShapedTensor<T, 4> frag_[2];
 
 public:
     FragmentSrcIterator() = default;
 
     COGITO_DEVICE
     FragmentSrcIterator(T* shared_ptr) : ptr_(shared_ptr) {
-        {
-            int tid = threadIdx.x;
-            strip_offset = (tid & 0xf) << 2;
-            block_offset = (tid >> 4) << 2;
-        }
+        int tid = threadIdx.x;
+        strip_offset = (tid & 0xf) << 2;
+        block_offset = (tid >> 4) << 2;
     }
 
     COGITO_DEVICE
@@ -70,14 +68,15 @@ public:
 
 private:
     cogito_device_ptr T* ptr_;
+    cogito_device_reg ShapedTensor<T, 16> frag_[4];
+    const T beta_;
     const int ldg_;
-    ShapedTensor<T, 16> frag_[4];
 
 public:
     FragmentResIterator() = default;
 
     COGITO_DEVICE
-    FragmentResIterator(T* ptr, const int ldg) : ldg_(ldg) {
+    FragmentResIterator(T beta, T* ptr, const int ldg) : beta_(beta), ldg_(ldg) {
         {
             int tid = threadIdx.x;
             ptr_ = ptr + ((tid & 0xf) << 2) + ((tid >> 4) << 2) * ldg_;
@@ -86,6 +85,14 @@ public:
         ThreadLdSt<T>::stripedLoad<0, 4>(frag_[1], ptr_ + kWidthStride                       , ldg_, mp::Range2Type<0, 4>{});
         ThreadLdSt<T>::stripedLoad<0, 4>(frag_[2], ptr_ + kHeightStride * ldg_               , ldg_, mp::Range2Type<0, 4>{});
         ThreadLdSt<T>::stripedLoad<0, 4>(frag_[3], ptr_ + kHeightStride * ldg_ + kWidthStride, ldg_, mp::Range2Type<0, 4>{});
+
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < 4; ++i) {
+            COGITO_PRAGMA_UNROLL
+            for (int j = 0; j < 16; ++j) {
+                frag_[i][j] *= beta;
+            }
+        }
     };
 
     COGITO_DEVICE
@@ -122,10 +129,10 @@ public:
             frag_a.blockedLoad();
             frag_b.stripedLoad();
 
-            op(frag_a[0], frag_b[0], frag_c[0]);
-            op(frag_a[0], frag_b[1], frag_c[1]);
-            op(frag_a[1], frag_b[0], frag_c[2]);
-            op(frag_a[1], frag_b[1], frag_c[3]);
+            op(alpha, frag_a[0], frag_b[0], beta, frag_c[0]);
+            op(alpha, frag_a[0], frag_b[1], beta, frag_c[1]);
+            op(alpha, frag_a[1], frag_b[0], beta, frag_c[2]);
+            op(alpha, frag_a[1], frag_b[1], beta, frag_c[3]);
 
             frag_a++;
             frag_b++;

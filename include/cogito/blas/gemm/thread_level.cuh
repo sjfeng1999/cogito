@@ -19,19 +19,22 @@ struct ThreadMma {
 public:
     static constexpr int kM = 4;
     static constexpr int kN = 4;
-    static constexpr int kK = 4;
-    using ShapedTensorA = ShapedTensor<T, kM>;
-    using ShapedTensorB = ShapedTensor<T, kN>;
+    static constexpr int kK = 1;
+    using ShapedTensorA = ShapedTensor<T, kM * kK>;
+    using ShapedTensorB = ShapedTensor<T, kN * kK>;
     using ShapedTensorC = ShapedTensor<T, kM * kN>;
 
 public:
     COGITO_DEVICE
-    void operator()(const ShapedTensorA& A, const ShapedTensorB& B, ShapedTensorC& C){
+    void operator()(const T alpha, const ShapedTensorA& A, const ShapedTensorB& B, const T beta, ShapedTensorC& C) {
         COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kM; ++i){
+        for (int i = 0; i < kM; ++i) {
             COGITO_PRAGMA_UNROLL
-            for (int j = 0; j < kN; ++j){
-                C[i * kM + j] += A[i] * B[j];
+            for (int j = 0; j < kN; ++j) {
+                COGITO_PRAGMA_UNROLL
+                for (int k = 0; k < kK; ++k) {
+                    C[i * kN + j] += alpha * A[i * kK + k] * B[k * kK + j];
+                }
             }
         }
     }

@@ -43,14 +43,24 @@ enum class Status : uint8_t {
     kUnknownError,
 };
 
-enum class LoadCachePolicy : uint8_t {
-    kCA,          // cache all level
-    kCG,          // cache global
-    kDefault,     
+enum class LoadPolicy : uint8_t {
+    kCA,          // cache at all level
+    kCG,          // cache at global-level
+    kCS,          // cache streaming
+    kLU,          // last use
+    kCV,          // don't cache and fetch again
+    kShared,      // load from shared memory
+    kConstant,    // load from constant memory
+    kDefault,     // default global memory cache modifier
 };
 
-enum class StoreCachePolicy : uint8_t {
-    kDefault,      
+enum class StorePolicy : uint8_t {
+    kWB,          // cache write-back
+    kCG,          // cache at global-level
+    kCS,          // cache streaming
+    kWT,          // cache write-through
+    kShared,      // store into shared memory
+    kDefault,     // default global memory cache modifier
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

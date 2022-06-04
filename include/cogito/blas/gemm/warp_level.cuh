@@ -21,6 +21,7 @@ struct FragmentSrcIterator {
 public:
     static constexpr int kTileWidth = 128;
     static constexpr int kLoop      = 8;
+    static constexpr LoadPolicy kLdPolicy = LoadPolicy::kDefault;
 
 private:
     cogito_shared_ptr T* ptr_;
@@ -43,14 +44,14 @@ public:
 
     COGITO_DEVICE
     void stripedLoad(){
-        ThreadLdSt<T>::load(frag_[0], ptr_ + strip_offset);
-        ThreadLdSt<T>::load(frag_[1], ptr_ + strip_offset + (kTileWidth >> 1));
+        ThreadLd<T, kLdPolicy>::load(frag_[0], ptr_ + strip_offset);
+        ThreadLd<T, kLdPolicy>::load(frag_[1], ptr_ + strip_offset + (kTileWidth >> 1));
     }
 
     COGITO_DEVICE
     void blockedLoad(){
-        ThreadLdSt<T>::load(frag_[0], ptr_ + block_offset);
-        ThreadLdSt<T>::load(frag_[1], ptr_ + block_offset + (kTileWidth >> 1));
+        ThreadLd<T, kLdPolicy>::load(frag_[0], ptr_ + block_offset);
+        ThreadLd<T, kLdPolicy>::load(frag_[1], ptr_ + block_offset + (kTileWidth >> 1));
     }
 
     COGITO_DEVICE
@@ -59,6 +60,7 @@ public:
     COGITO_DEVICE 
     constexpr ShapedTensor<T, 4>& operator[](int pos) { return frag_[pos]; }
 };
+
 
 template<typename T>
 struct FragmentResIterator {
@@ -81,10 +83,10 @@ public:
             int tid = threadIdx.x;
             ptr_ = ptr + ((tid & 0xf) << 2) + ((tid >> 4) << 2) * ldg_;
         }
-        ThreadLdSt<T>::stripedLoad<0, 4>(frag_[0], ptr_                                      , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedLoad<0, 4>(frag_[1], ptr_ + kWidthStride                       , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedLoad<0, 4>(frag_[2], ptr_ + kHeightStride * ldg_               , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedLoad<0, 4>(frag_[3], ptr_ + kHeightStride * ldg_ + kWidthStride, ldg_, mp::Range2Type<0, 4>{});
+        ThreadLd<T>::stripedLoad<0, 4>(frag_[0], ptr_                                      , ldg_, mp::Range2Type<0, 4>{});
+        ThreadLd<T>::stripedLoad<0, 4>(frag_[1], ptr_ + kWidthStride                       , ldg_, mp::Range2Type<0, 4>{});
+        ThreadLd<T>::stripedLoad<0, 4>(frag_[2], ptr_ + kHeightStride * ldg_               , ldg_, mp::Range2Type<0, 4>{});
+        ThreadLd<T>::stripedLoad<0, 4>(frag_[3], ptr_ + kHeightStride * ldg_ + kWidthStride, ldg_, mp::Range2Type<0, 4>{});
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < 4; ++i) {
@@ -97,10 +99,10 @@ public:
 
     COGITO_DEVICE
     void store() {
-        ThreadLdSt<T>::stripedStore<0, 4>(frag_[0], ptr_                                      , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedStore<0, 4>(frag_[1], ptr_ + kWidthStride                       , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedStore<0, 4>(frag_[2], ptr_ + kHeightStride * ldg_               , ldg_, mp::Range2Type<0, 4>{});
-        ThreadLdSt<T>::stripedStore<0, 4>(frag_[3], ptr_ + kHeightStride * ldg_ + kWidthStride, ldg_, mp::Range2Type<0, 4>{});
+        ThreadSt<T>::stripedStore<0, 4>(frag_[0], ptr_                                      , ldg_, mp::Range2Type<0, 4>{});
+        ThreadSt<T>::stripedStore<0, 4>(frag_[1], ptr_ + kWidthStride                       , ldg_, mp::Range2Type<0, 4>{});
+        ThreadSt<T>::stripedStore<0, 4>(frag_[2], ptr_ + kHeightStride * ldg_               , ldg_, mp::Range2Type<0, 4>{});
+        ThreadSt<T>::stripedStore<0, 4>(frag_[3], ptr_ + kHeightStride * ldg_ + kWidthStride, ldg_, mp::Range2Type<0, 4>{});
     }
 
     COGITO_DEVICE 
@@ -108,6 +110,7 @@ public:
         return frag_[pos];
     }
 };
+
 
 template<typename T, MmaType type = MmaType::kLegacy>
 struct WarpMma {
@@ -143,12 +146,10 @@ public:
 /*
 template<typename T>
 struct WarpMma<T, MmaType::kTensorCore> {
-    
 public:
     static constexpr int kM = 16;
     static constexpr int kN = 16;
     static constexpr int kK = 16;
-
     using FragmentSrcAIteratorT = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::matrix_a, kM, kN, kK, T, typename nvcuda::wmma::row_major>;
     using FragmentSrcBIteratorT = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::matrix_b, kM, kN, kK, T, typename nvcuda::wmma::row_major>;
     using FragmentResIteratorT  = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::accumulator, kM, kN, kK, T>;

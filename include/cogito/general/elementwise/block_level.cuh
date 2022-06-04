@@ -35,14 +35,14 @@ public:
         ShapedTensorT tensor;
         // TODO (strip condition)
         if (offset < size) {
-            ThreadLdSt<T>::load(tensor, input + offset);
+            ThreadLd<T, LoadPolicy::kCA>::load(tensor, input + offset);
         }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor);
         }
         if (offset < size) {
-            ThreadLdSt<T>::store(tensor, output + offset);
+            ThreadSt<T>::store(tensor, output + offset);
         }
     } 
 
@@ -55,14 +55,14 @@ public:
         ShapedTensorT tensor;
         // TODO (strip condition)
         if (offset < size) {
-            ThreadLdSt<T>::load(tensor, input + offset);
+            ThreadLd<T, LoadPolicy::kCA>::load(tensor, input + offset);
         }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor, operand);
         }
         if (offset < size) {
-            ThreadLdSt<T>::store(tensor, output + offset);
+            ThreadSt<T>::store(tensor, output + offset);
         }
     } 
 };

@@ -35,9 +35,9 @@ public:
         const T identity = ReduceOpT::kIdentity;
         
         if (tid + block_offset < size) {
-            ThreadLdSt<T>::load(input_tensor, input + block_offset + tid);
+            ThreadLd<T>::load(input_tensor, input + block_offset + tid);
         } else {
-            ThreadLdSt<T>::load(input_tensor, identity);
+            ThreadLd<T>::load(input_tensor, identity);
         }
 
         T warp_res;

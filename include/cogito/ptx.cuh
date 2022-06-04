@@ -66,43 +66,43 @@ void barSync(){
     );
 }
 
-template<LoadCachePolicy cache>
+
+template<LoadPolicy policy = LoadPolicy::kDefault>
 COGITO_DEVICE 
-void ld_128b(void* dst, void* src);
+void ld_128b(void* dst, void* src) {
+    *static_cast<float4*>(dst) = *static_cast<float4*>(src);
+}
 
-// ldg / lds
-
-template<LoadCachePolicy cache>
+template<LoadPolicy policy = LoadPolicy::kDefault>
 COGITO_DEVICE 
-void ld_64b();
+void ld_64b(void* dst, void* src) {
+    *static_cast<float2*>(dst) = *static_cast<float2*>(src);
+}
 
-template<LoadCachePolicy cache>
+template<LoadPolicy policy = LoadPolicy::kDefault>
 COGITO_DEVICE 
-void ld_32b();
+void ld_32b(void* dst, void* src) {
+    *static_cast<float*>(dst) = *static_cast<float*>(src);
+}
 
-
-template<LoadCachePolicy cache>
+template<StorePolicy policy = StorePolicy::kDefault>
 COGITO_DEVICE 
-void ld_128b(void* dst, void* src);
+void st_128b(void* dst, void* src) {
+    *static_cast<float4*>(dst) = *static_cast<float4*>(src);
+}
 
-template<LoadCachePolicy cache>
+template<StorePolicy policy = StorePolicy::kDefault>
 COGITO_DEVICE 
-void ldg_64b();
+void st_64b(void* dst, void* src) {
+    *static_cast<float2*>(dst) = *static_cast<float2*>(src);
+}
 
-template<LoadCachePolicy cache>
+template<StorePolicy policy = StorePolicy::kDefault>
 COGITO_DEVICE 
-void ldg_32b();
+void st_32b(void* dst, void* src) {
+    *static_cast<float*>(dst) = *static_cast<float*>(src);
+}
 
-// template<>
-// COGITO_DEVICE 
-// void ld_128b<LdCache::kCA>(void* dst, void* src) {
-//     asm volatile(
-//         "ld.global.v4.float     %0,     %1;\n\t"
-//         :"=l"(dst) 
-//         :"l"(src)
-//         :"memory"
-//     );
-// }
 
 
 } // namespace ptx

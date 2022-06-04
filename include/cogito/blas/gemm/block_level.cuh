@@ -58,17 +58,17 @@ public:
 
     COGITO_DEVICE
     void update() {
-        ThreadLdSt<T>::load(frag_, global_ptr_offset_);
+        ThreadLd<T>::load(frag_, global_ptr_offset_);
         if (kTranspose) {             
-            ThreadLdSt<T>::stripedStore<0, 1, kTileWidth>(frag_, shared_ptr_offset_, mp::Range2Type<0, 4>{});
+            ThreadSt<T>::stripedStore<0, 1, kTileWidth>(frag_, shared_ptr_offset_, mp::Range2Type<0, 4>{});
         } else {
-            ThreadLdSt<T>::store(frag_, shared_ptr_offset_);
+            ThreadSt<T>::store(frag_, shared_ptr_offset_);
         }
     }
 
     COGITO_DEVICE
     void operator++(int) {
-        if (kTranspose){
+        if (kTranspose) {
             global_ptr_offset_ += kTileHeight;
         } else {
             global_ptr_offset_ += kTileHeight * ldg_;

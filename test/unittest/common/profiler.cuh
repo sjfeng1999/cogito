@@ -67,7 +67,7 @@ public:
             printf("    Elapsed >> min = %5.2f ms   max = %5.2f ms   avg = %5.2f ms     >> Glops = %5.2f GFlops/s\n", 
                 minVal, maxVal, avgVal, gflops * 1000 / avgVal);
         } else {
-            printf("    Some Error Occured. \n");
+            printf("    >>> Some Error Occured. <<<\n");
         }
 #endif // COGITO_KERNEL_PROFILER 
 

@@ -14,8 +14,8 @@
 #include "gtest/gtest.h"
 #include "cogito/blas/blas.cuh"
 
-#include "unittest/profiler.cuh"
-#include "unittest/utils.cuh"
+#include "unittest/common/profiler.cuh"
+#include "unittest/common/utils.cuh"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -80,9 +80,9 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(BlasPart,
                          BlasFixture,
-                         testing::Combine(testing::Values(2048),
+                         testing::Combine(testing::Values(512, 2048),
+                                          testing::Values(512, 2048),
                                           testing::Values(2048),
-                                          testing::Values(2048),
-                                          testing::Values(1.0),
+                                          testing::Values(1.2),
                                           testing::Values(0.6)));
 

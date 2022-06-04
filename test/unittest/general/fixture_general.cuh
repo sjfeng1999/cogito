@@ -13,8 +13,8 @@
 #include "cogito/tensor.cuh"
 #include "cogito/general/general.cuh"
 
-#include "unittest/profiler.cuh"
-#include "unittest/utils.cuh"
+#include "unittest/common/profiler.cuh"
+#include "unittest/common/utils.cuh"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,3 +89,4 @@ protected:
 INSTANTIATE_TEST_SUITE_P(GeneralPart,
                          GeneralFixture,
                          testing::Values(32, 252, 256, 257, 4096));
+                         

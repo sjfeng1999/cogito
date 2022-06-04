@@ -229,9 +229,6 @@ public:
         int group_id = threadIdx.x % kGroupSize;
         ThreadLdSt<T, kLdPolicy, kStPolicy>::stripedLoad<Start, BlockSize, BlockSize * kGroupSize>(tensor, ptr + group_id * BlockSize, mp::Range2Type<RangeStart, RangeEnd>{});
     }
-    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
-    COGITO_DEVICE
-    static void load(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -241,9 +238,6 @@ public:
         int group_id = threadIdx.x % kGroupSize;
         ThreadLdSt<T, kLdPolicy, kStPolicy>::stripedStore<Start, BlockSize, BlockSize * kGroupSize>(tensor, ptr + group_id * BlockSize, mp::Range2Type<RangeStart, RangeEnd>{});
     }
-    template<int Start, int BlockSize, int TensorSize, int RangeEnd>
-    COGITO_DEVICE
-    static void store(const ShapedTensor<T, TensorSize>& tensor, T* ptr, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 };
 
 } // namespace cogito

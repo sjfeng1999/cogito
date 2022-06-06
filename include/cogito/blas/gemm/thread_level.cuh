@@ -33,7 +33,11 @@ public:
             for (int j = 0; j < kN; ++j) {
                 COGITO_PRAGMA_UNROLL
                 for (int k = 0; k < kK; ++k) {
-                    C[i * kN + j] += alpha * A[i * kK + k] * B[k * kK + j];
+                    if (i % 2 == 0) {
+                        C[i * kN + kN - j - 1] += alpha * A[i * kK + k] * B[k * kK + kN - j - 1];
+                    } else {
+                        C[i * kN + j] += alpha * A[i * kK + k] * B[k * kK + j];
+                    }
                 }
             }
         }

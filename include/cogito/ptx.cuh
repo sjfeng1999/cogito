@@ -5,8 +5,6 @@
 
 #pragma once 
 
-#include <cstdint>
-
 #include "cogito/cogito.cuh"
 
 namespace cogito {
@@ -46,7 +44,6 @@ int32_t getWarpid(){
     );
     return warpid;
 }
-
 
 COGITO_DEVICE 
 int32_t getLaneid(){
@@ -103,6 +100,125 @@ void st_32b(void* dst, void* src) {
     *static_cast<float*>(dst) = *static_cast<float*>(src);
 }
 
+
+template<>
+COGITO_DEVICE 
+void ld_128b<LoadPolicy::kCA>(void* dst, void* src) {
+    float4 val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.ca.L2::256B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
+#else 
+        "ld.global.ca.L2::128B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
+#endif
+        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float4*>(dst) = val;
+}
+
+template<>
+COGITO_DEVICE 
+void ld_64b<LoadPolicy::kCA>(void* dst, void* src) {
+    float2 val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.ca.L2::256B.v2.f32     { %0, %1 },    [%2];  \n\t"
+#else 
+        "ld.global.ca.L2::128B.v2.f32     { %0, %1 },    [%2];  \n\t"
+#endif
+        :"=f"(val.x), "=f"(val.y)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float2*>(dst) = val;
+}
+
+template<>
+COGITO_DEVICE 
+void ld_32b<LoadPolicy::kCA>(void* dst, void* src) {
+    float val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.ca.L2::256B.f32     %0,    [%4];  \n\t"
+#else 
+        "ld.global.ca.L2::128B.f32     %0,    [%4];  \n\t"
+#endif
+        :"=f"(val)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float*>(dst) = val;
+}
+
+
+
+template<>
+COGITO_DEVICE 
+void ld_128b<LoadPolicy::kCS>(void* dst, void* src) {
+    float4 val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.cs.L2::256B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
+#else 
+        "ld.global.cs.L2::128B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
+#endif
+        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float4*>(dst) = val;
+}
+
+template<>
+COGITO_DEVICE 
+void ld_64b<LoadPolicy::kCS>(void* dst, void* src) {
+    float2 val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.cs.L2::256B.v2.f32     { %0, %1 },    [%2];  \n\t"
+#else 
+        "ld.global.cs.L2::128B.v2.f32     { %0, %1 },    [%2];  \n\t"
+#endif
+        :"=f"(val.x), "=f"(val.y)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float2*>(dst) = val;
+}
+
+template<>
+COGITO_DEVICE 
+void ld_32b<LoadPolicy::kCS>(void* dst, void* src) {
+    float val;
+    asm volatile(
+#if __CUDA_ARCH__ >= 800
+        "ld.global.cs.L2::256B.f32     %0,    [%4];  \n\t"
+#else 
+        "ld.global.cs.L2::128B.f32     %0,    [%4];  \n\t"
+#endif
+        :"=f"(val)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float*>(dst) = val;
+}
+
+
+
+template<>
+COGITO_DEVICE 
+void ld_128b<LoadPolicy::kShared>(void* dst, void* src) {
+    float4 val;
+    asm volatile(
+        "ld.shared.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
+        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
+        :"l"(src)
+        :"memory"
+    );
+    *static_cast<float4*>(dst) = val;
+}
 
 
 } // namespace ptx

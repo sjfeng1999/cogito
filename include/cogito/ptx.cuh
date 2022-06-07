@@ -141,9 +141,9 @@ void ld_32b<LoadPolicy::kCA>(void* dst, void* src) {
     float val;
     asm volatile(
 #if __CUDA_ARCH__ >= 800
-        "ld.global.ca.L2::256B.f32     %0,    [%4];  \n\t"
+        "ld.global.ca.L2::256B.f32     %0,    [%1];  \n\t"
 #else 
-        "ld.global.ca.L2::128B.f32     %0,    [%4];  \n\t"
+        "ld.global.ca.L2::128B.f32     %0,    [%1];  \n\t"
 #endif
         :"=f"(val)
         :"l"(src)
@@ -194,9 +194,9 @@ void ld_32b<LoadPolicy::kCS>(void* dst, void* src) {
     float val;
     asm volatile(
 #if __CUDA_ARCH__ >= 800
-        "ld.global.cs.L2::256B.f32     %0,    [%4];  \n\t"
+        "ld.global.cs.L2::256B.f32     %0,    [%1];  \n\t"
 #else 
-        "ld.global.cs.L2::128B.f32     %0,    [%4];  \n\t"
+        "ld.global.cs.L2::128B.f32     %0,    [%1];  \n\t"
 #endif
         :"=f"(val)
         :"l"(src)

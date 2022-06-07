@@ -17,7 +17,6 @@ template<typename T>
 struct Softmax;
 
 
-
 enum class ConvType {
     kImplicitGemm,
     kWinograd,

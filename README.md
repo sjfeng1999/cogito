@@ -3,27 +3,16 @@
 ![](https://img.shields.io/github/workflow/status/sjfeng1999/cogito/release)
 
 
-## General
+## Common
 
-- [x] ElementWise
-- [x] Reduce
-- [ ] Scan
-   
-## BLAS
+1. LD/ST 提高单条指令中操作的数据量
+2. 类似cooperative_group概念的特定group的LD/ST操作
 
-- [ ] axpy (l1)
-- [ ] gemv (l2)
-- [ ] gemm (l3)
+## Algo  
 
-
-## DNN
-1.Activation
-- [ ] sigmoid
-- [ ] softmax
-
-2.Conv
-- [ ] Conv2d
-
-3.Norm
-- [ ] BatchNorm
+|   General           |       BLAS            |       DNN             |
+|:-------------------:|:---------------------:|:---------------------:|
+| Elementwise         |     axpy(todo)        |  sigmoid              |
+| Reduce              |     gemm              |  softmax              |
+| scan(todo)          |     gemv(todo)        | conv2d (todo)         |
 

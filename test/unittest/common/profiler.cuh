@@ -39,6 +39,9 @@ public:
         Status res = Status::kSuccess;
 
 #ifdef COGITO_KERNEL_PROFILER 
+        minVal = std::numeric_limits<float>::max();
+        maxVal = 0;
+        avgVal = 0;
         KernelOp kernel_op;
         float elapsed = 0;
 

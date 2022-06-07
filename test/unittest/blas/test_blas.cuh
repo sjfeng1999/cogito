@@ -7,12 +7,6 @@
 
 #include "unittest/blas/fixture_blas.cuh"
 
-struct GemmGFlops {
-    float operator()(int m, int n, int k, float, float*, int, float*, int, float, float*, int) {
-        float m_f = static_cast<float>(m);
-        return (m_f * n * k + m_f * n) / (1024 * 1024 * 1024);
-    }
-};
 
 TEST_P(BlasFixture, GEMMTest){
     
@@ -25,7 +19,7 @@ TEST_P(BlasFixture, GEMMTest){
                                       mn * sizeof(float), 
                                       cudaMemcpyDeviceToHost));
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
-    profiler.profile<GemmOpT, GemmGFlops>(m, n, k, alpha, A_d, k, B_d, n, beta, C_d, n);
+    profiler.profile<GemmOpT>(gflops, m, n, k, alpha, A_d, k, B_d, n, beta, C_d, n);
 
     cublasHandle_t blas_handle;
     cublasCreate(&blas_handle);

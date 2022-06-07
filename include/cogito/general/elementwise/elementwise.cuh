@@ -56,30 +56,20 @@ void ElementWiseKernel(const T* input, T* output, T* operand, const int size){
 
 template<typename T, template<typename> class ElementWiseOp>
 struct ElementWise {
-
+public:
     static constexpr int kBlockDimX = 256;
     
-    Status operator()(Tensor<T>& input, Tensor<T>& output, cudaStream_t stream = nullptr) {
-        if (input.size() != output.size()) {
-            return Status::kTensorShapeMismatch;
-        }
-
-        dim3 blockDim(kBlockDimX, 1, 1);
-        dim3 gridDim(UPPER_DIV(input.size(), kBlockDimX), 1, 1);
-        detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gridDim, blockDim, 0, stream>>>(input.data(), output.data(), input.size());
-        return Status::kSuccess;
-    }
-
+public:
     cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
         
         dim3 blockDim(kBlockDimX, 1, 1);
 
         if (size % 4 == 0){
-            dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
+            dim3 gridDim(UPPER_DIV(size >> 2, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, size);
 
         } else if (size % 2 == 0){
-            dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
+            dim3 gridDim(UPPER_DIV(size >> 1, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, size);
 
         } else {
@@ -88,7 +78,6 @@ struct ElementWise {
         }
         return cudaPeekAtLastError();
     }
-
 
     // operand is Host-Value
     cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = nullptr){

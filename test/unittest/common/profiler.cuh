@@ -33,17 +33,14 @@ public:
         cudaEventCreate(&stop);
     }
 
-    template<typename KernelOp, typename GFlopsOp, typename... Args>
-    Status profile(Args... args){
+    template<typename KernelOp, typename... Args>
+    Status profile(float gflops, Args... args){
 
         Status res = Status::kSuccess;
 
 #ifdef COGITO_KERNEL_PROFILER 
         KernelOp kernel_op;
-        GFlopsOp gflops_op;
-
         float elapsed = 0;
-        float gflops = gflops_op(args...);
 
         for (int i = 0; i < kWarmupTimes; ++i){
             kernel_op(args...);

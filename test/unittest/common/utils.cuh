@@ -14,7 +14,7 @@ namespace test {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-bool verifyResult(T* array1, T* array2, int size, float epsilon=5e-3f) {
+bool verifyResult(T* array1, T* array2, int size, float epsilon=1e-2f) {
     float err = 0.0f;
     for (int i = 0; i < size; ++i){
         err = abs(static_cast<float>(array1[i] - array2[i]));

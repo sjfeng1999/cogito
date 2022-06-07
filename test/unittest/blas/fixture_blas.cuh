@@ -31,6 +31,7 @@ public:
         mn = m * n;
         mk = m * k;
         nk = n * k;
+        gflops = (static_cast<float>(m) * n * k + m * n) / (1024 * 1024 * 1024);
 
         A_h = static_cast<float*>(malloc(sizeof(float) * mk));
         B_h = static_cast<float*>(malloc(sizeof(float) * nk));
@@ -73,6 +74,7 @@ protected:
     int m, n, k;
     int mn, mk, nk;
     float alpha, beta;
+    float gflops;
     cudaError_t status;
     cogito::test::KernelProfiler profiler;
 };
@@ -80,8 +82,8 @@ protected:
 
 INSTANTIATE_TEST_SUITE_P(BlasPart,
                          BlasFixture,
-                         testing::Combine(testing::Values(512, 2048),
-                                          testing::Values(512, 2048),
+                         testing::Combine(testing::Values(2048),
+                                          testing::Values(2048),
                                           testing::Values(2048),
                                           testing::Values(1.2),
                                           testing::Values(0.6)));

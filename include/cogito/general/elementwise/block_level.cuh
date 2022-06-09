@@ -22,6 +22,8 @@ public:
     static constexpr int kStripSize      = stripSize;
     static constexpr int kItemsPerThread = kBlockSize * kStripSize;
     static constexpr int kBlockWorkload  = kBlockDimX * kItemsPerThread;
+    static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kDefault;
+    static constexpr StorePolicy kStPolicy = StorePolicy::kDefault;
     using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemsPerThread>;
     using ShapedTensorT        = ShapedTensor<T, kItemsPerThread>;
 
@@ -35,14 +37,14 @@ public:
         ShapedTensorT tensor;
         // TODO (strip condition)
         if (offset < size) {
-            ThreadLd<T, LoadPolicy::kCA>::load(tensor, input + offset);
+            ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
         }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor);
         }
         if (offset < size) {
-            ThreadSt<T>::store(tensor, output + offset);
+            ThreadSt<T, kStPolicy>::store(tensor, output + offset);
         }
     } 
 
@@ -55,14 +57,14 @@ public:
         ShapedTensorT tensor;
         // TODO (strip condition)
         if (offset < size) {
-            ThreadLd<T, LoadPolicy::kCA>::load(tensor, input + offset);
+            ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
         }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor, operand);
         }
         if (offset < size) {
-            ThreadSt<T>::store(tensor, output + offset);
+            ThreadSt<T, kStPolicy>::store(tensor, output + offset);
         }
     } 
 };

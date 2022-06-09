@@ -25,6 +25,7 @@ TEST_P(BlasFixture, GEMMTest){
                                       mn * sizeof(float), 
                                       cudaMemcpyDeviceToHost));
     EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
+    gflops = (1.0 * m * n * k + m * n) / (1024 * 1024 * 1024);
     profiler.profile<GemmOpT>(gflops, m, n, k, alpha, A_d, k, B_d, n, beta, C_d, n);
 
     cublasHandle_t blas_handle;

@@ -80,11 +80,11 @@ struct Range2Type {
     static constexpr int end   = End;
 };
 
+
 template<int Val, int... Vals>
 struct Product {
     static constexpr int value = Val * Product<Vals...>::value;
 };
-
 template<int Val>
 struct Product<Val> {
     static constexpr int value = Val;
@@ -93,6 +93,16 @@ struct Product<Val> {
 template<int Val>
 struct IsPow2 {
     static constexpr int value = (Val & Val - 1) == 0;
+};
+
+template<int Val>
+struct Log2 {
+    static_assert(IsPow2<Val>::value);
+    static constexpr int value = 1 + Log2<(Val >> 1)>::value;
+};
+template<>
+struct Log2<1> {
+    static constexpr int value = 0;
 };
 
 

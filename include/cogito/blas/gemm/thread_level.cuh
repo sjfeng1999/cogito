@@ -5,7 +5,6 @@
 
 #pragma once 
 
-#include "cogito/cogito.cuh"
 #include "cogito/tensor.cuh"
 
 namespace cogito {
@@ -14,12 +13,12 @@ namespace detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, MmaType type = MmaType::kLegacy>
+template<typename T, typename Shape>
 struct ThreadMma {
 public:
-    static constexpr int kM = 4;
-    static constexpr int kN = 4;
-    static constexpr int kK = 1;
+    static constexpr int kM = Shape::kM;
+    static constexpr int kN = Shape::kN;
+    static constexpr int kK = Shape::kK;
     using ShapedTensorA = ShapedTensor<T, kM * kK>;
     using ShapedTensorB = ShapedTensor<T, kN * kK>;
     using ShapedTensorC = ShapedTensor<T, kM * kN>;
@@ -43,7 +42,6 @@ public:
         }
     }
 };
-
 
 } // namespace detail
 } // namespace blas

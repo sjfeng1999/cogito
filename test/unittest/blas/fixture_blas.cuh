@@ -31,7 +31,6 @@ public:
         mn = m * n;
         mk = m * k;
         nk = n * k;
-        gflops = (static_cast<float>(m) * n * k + m * n) / (1024 * 1024 * 1024);
 
         A_h = static_cast<float*>(malloc(sizeof(float) * mk));
         B_h = static_cast<float*>(malloc(sizeof(float) * nk));

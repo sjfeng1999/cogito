@@ -14,6 +14,13 @@ namespace blas {
 
 namespace detail {
 
+template<int M, int N, int K>
+struct GemmShape {
+    static constexpr int kM = M;
+    static constexpr int kN = N;
+    static constexpr int kK = K;
+};
+
 template<typename T, MmaType type>
 struct GemmConfig {};
 

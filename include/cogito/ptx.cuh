@@ -82,6 +82,7 @@ void ld_32b(void* dst, void* src) {
     *static_cast<float*>(dst) = *static_cast<float*>(src);
 }
 
+
 template<StorePolicy policy = StorePolicy::kDefault>
 COGITO_DEVICE 
 void st_128b(void* dst, void* src) {
@@ -218,6 +219,26 @@ void ld_128b<LoadPolicy::kShared>(void* dst, void* src) {
         :"memory"
     );
     *static_cast<float4*>(dst) = val;
+}
+
+
+
+COGITO_DEVICE 
+void prefetch_l2(void* src) {
+    asm volatile (
+        "prefetch.global.L2     [%0];\n\t"
+        ::"l"(src)
+        :"memory"
+    );
+}
+
+COGITO_DEVICE 
+void prefetch_l1(void* src) {
+    asm volatile (
+        "prefetch.global.L1     [%0];\n\t"
+        ::"l"(src)
+        :"memory"
+    );
 }
 
 

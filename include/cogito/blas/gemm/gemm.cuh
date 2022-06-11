@@ -21,6 +21,9 @@ struct GemmShape {
     static constexpr int kK = K;
 };
 
+struct Matrix_a {};
+struct Matrix_b {};
+
 template<typename T, MmaType type>
 struct GemmConfig {};
 
@@ -53,6 +56,8 @@ void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T be
     
     TileSrcAIteratorT iter_a(block_A, lda, shared_a);
     TileSrcBIteratorT iter_b(block_B, ldb, shared_b);
+    __syncthreads();
+    
     TileResIteratorT iter_c(block_C, ldc);
 
     BlockMmaT op;

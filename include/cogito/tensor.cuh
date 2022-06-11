@@ -55,6 +55,15 @@ public:
         static_assert(mp::Product<Indexes...>::value < kSize, "index exceed tensor size");
         return data_[mp::Product<Indexes...>::value]; 
     }
+
+    template<int Start = 0, int Length = kSize>
+    COGITO_DEVICE
+    void setValue(const T& val) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kSize; ++i) {
+            data_[i] = val;
+        }
+    }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

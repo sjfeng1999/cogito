@@ -17,13 +17,14 @@ namespace detail {
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize, int stripSize = 1>
 struct BlockElementWise {
 public:
+    static constexpr int kElementSize    = sizeof(T);
     static constexpr int kBlockDimX      = BlockDimX;
     static constexpr int kBlockSize      = blockSize;
     static constexpr int kStripSize      = stripSize;
     static constexpr int kItemsPerThread = kBlockSize * kStripSize;
     static constexpr int kBlockWorkload  = kBlockDimX * kItemsPerThread;
-    static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kDefault;
-    static constexpr StorePolicy kStPolicy = StorePolicy::kDefault;
+    static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCA;
+    static constexpr StorePolicy kStPolicy = StorePolicy::kWT;
     using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemsPerThread>;
     using ShapedTensorT        = ShapedTensor<T, kItemsPerThread>;
 
@@ -37,14 +38,16 @@ public:
         ShapedTensorT tensor;
         // TODO (strip condition)
         if (offset < size) {
-            ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+            ThreadLd<T, kLdPolicy>::load(tensor, 
+                ptx::computeEffectiveAddr<mp::Log2<kElementSize>::value>(input, offset));
         }
         {
             ThreadElementWiseOpT thread_op;
             thread_op(tensor, tensor);
         }
         if (offset < size) {
-            ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+            ThreadSt<T, kStPolicy>::store(tensor, 
+                ptx::computeEffectiveAddr<mp::Log2<kElementSize>::value>(output, offset));
         }
     } 
 

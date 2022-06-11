@@ -6,13 +6,12 @@
 ## Common
 
 1. LD/ST 提高单条指令中操作的数据量
-2. 类似cooperative_group概念的特定group的LD/ST操作
+2. threadGroup概念的LD/ST操作
+3. device函数生成特定的SASS指令
 
-## Algo  
+## Throughput
 
-|   General           |       BLAS            |       DNN             |
-|:-------------------:|:---------------------:|:---------------------:|
-| Elementwise         |     axpy(todo)        |  sigmoid              |
-| Reduce              |     gemm              |  softmax              |
-| scan(todo)          |     gemv(todo)        | conv2d (todo)         |
+| BLAS           |    Size              |    cogito         |       cublas      |
+|:--------------:|:--------------------:|:-----------------:|:-----------------:|
+| Sgemm          | 2048 * 2048 * 2048   |    2036.19GB/s    |    2699.73GB/s    |
 

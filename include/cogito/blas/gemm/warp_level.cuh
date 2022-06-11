@@ -22,8 +22,8 @@ struct GemmShape;
 template<typename T, bool mat_a>
 struct FragmentSrcIterator {
 public:
-    static constexpr int kTileWidth = mat_a ? 140 : 128;
-    static constexpr int kLoop      = 8;
+    static constexpr int kTileWidth = mat_a ? 76 : 128;
+    static constexpr int kLoop      = 4;
     static constexpr LoadPolicy kLdPolicy = LoadPolicy::kDefault;
 
 private:
@@ -51,7 +51,7 @@ public:
     void load() {
         if constexpr (mat_a) {
             ThreadLd<T, kLdPolicy>::load(frag_[0], ptr_ + offset_);
-            ThreadLd<T, kLdPolicy>::load(frag_[1], ptr_ + offset_ + 72);
+            ThreadLd<T, kLdPolicy>::load(frag_[1], ptr_ + offset_ + 32 + 8);
         } else {
             ThreadLd<T, kLdPolicy>::load(frag_[0], ptr_ + offset_);
             ThreadLd<T, kLdPolicy>::load(frag_[1], ptr_ + offset_ + 64);
@@ -69,7 +69,7 @@ public:
 template<typename T>
 struct FragmentResIterator {
 public:
-    static constexpr int kHeightStride = 64;
+    static constexpr int kHeightStride = 32;
     static constexpr int kWidthStride  = 64;
     static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCA;
     static constexpr StorePolicy kStPolicy = StorePolicy::kDefault;

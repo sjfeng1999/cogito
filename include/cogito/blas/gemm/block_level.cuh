@@ -17,8 +17,8 @@ template<typename T, bool Transpose, MmaType mma_type>
 struct TileSrcIterator { 
 public:
     static constexpr bool kTranspose = Transpose;
-    static constexpr int kTileHeight = 8;
-    static constexpr int kTileWidth  = kTranspose ? 140 : 128;
+    static constexpr int kTileHeight = kTranspose ? 8 : 4;
+    static constexpr int kTileWidth  = kTranspose ? 76 : 128;
     static constexpr int kSharedSize = kTileHeight * kTileWidth;
     static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kDefault;
     static constexpr StorePolicy kStPolicy = StorePolicy::kDefault;
@@ -47,7 +47,7 @@ public:
                 tile_x = tid & 0x1;
                 tile_y = tid >> 1;
                 global_ptr_offset_ = (tile_x << 2) + tile_y * ldg_;
-                if (tile_y >= 64) {
+                if (tile_y >= 32) {
                     tile_y += 8;
                 }
                 shared_ptr_offset_ = tile_y + tile_x * kTileWidth * 4;
@@ -96,6 +96,7 @@ public:
 template<typename T, MmaType mma_type>
 struct TileResIterator {
 private:
+
     cogito_device_ptr T* const global_ptr_;
     const int ldg_;
 
@@ -140,14 +141,24 @@ public:
         mma_op(alpha, frag_a, frag_b, beta, frag_c);
         __syncthreads();
 
-        while (!tile_a.end()) {
+        while (true) {
+            tile_b++;
+            __syncthreads();
+
+            frag_a.reset(tile_a.shared_ptr() + 4 * TileSrcAIteratorT::kTileWidth);
+            frag_b.reset(tile_b.shared_ptr());
+            mma_op(alpha, frag_a, frag_b, beta, frag_c);
+            __syncthreads();
+
+            if (tile_a.end()) {
+                break;
+            }
             tile_a++;
             tile_b++;
             __syncthreads();
 
             frag_a.reset(tile_a.shared_ptr());
             frag_b.reset(tile_b.shared_ptr());
-
             mma_op(alpha, frag_a, frag_b, beta, frag_c);
             __syncthreads();
         }

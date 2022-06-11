@@ -29,9 +29,9 @@ struct GemmConfig {};
 
 template<>
 struct GemmConfig<float, MmaType::kLegacy> {
-    static constexpr int kBlockDimX       = 256;
+    static constexpr int kBlockDimX       = 128;
     static constexpr int kBlockTileWidth  = 128;
-    static constexpr int kBlockTileHeight = 128;
+    static constexpr int kBlockTileHeight = 64;
     static constexpr MmaType kMmaType     = MmaType::kLegacy;
     using type = float;
 };
@@ -57,7 +57,7 @@ void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T be
     TileSrcAIteratorT iter_a(block_A, lda, shared_a);
     TileSrcBIteratorT iter_b(block_B, ldb, shared_b);
     __syncthreads();
-    
+
     TileResIteratorT iter_c(block_C, ldc);
 
     BlockMmaT op;
@@ -78,7 +78,7 @@ public:
     cudaError_t operator()(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc, cudaStream_t stream = nullptr) {
 
         int gridX = UPPER_DIV(m, GemmConfigT::kBlockTileWidth);
-        int gridY = UPPER_DIV(n, GemmConfigT::kBlockTileWidth);
+        int gridY = UPPER_DIV(n, GemmConfigT::kBlockTileHeight);
 
         dim3 bDim(GemmConfigT::kBlockDimX);
         dim3 gDim(gridX, gridY);

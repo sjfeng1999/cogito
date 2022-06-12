@@ -19,7 +19,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-class BlasFixture : public testing::TestWithParam<std::tuple<int, int, int, float, float>> {
+class BlasFixture : public testing::TestWithParam<std::tuple<int, int, int, nv_half, nv_half>> {
 public:
     void SetUp() override {
         m = std::get<0>(GetParam());
@@ -32,25 +32,25 @@ public:
         mk = m * k;
         nk = n * k;
 
-        A_h = static_cast<float*>(malloc(sizeof(float) * mk));
-        B_h = static_cast<float*>(malloc(sizeof(float) * nk));
-        C_h = static_cast<float*>(malloc(sizeof(float) * mn));
-        res_naive = static_cast<float*>(malloc(sizeof(float) * mn));
-        res_std   = static_cast<float*>(malloc(sizeof(float) * mn));
+        A_h = static_cast<nv_half*>(malloc(sizeof(nv_half) * mk));
+        B_h = static_cast<nv_half*>(malloc(sizeof(nv_half) * nk));
+        C_h = static_cast<nv_half*>(malloc(sizeof(nv_half) * mn));
+        res_naive = static_cast<nv_half*>(malloc(sizeof(nv_half) * mn));
+        res_std   = static_cast<nv_half*>(malloc(sizeof(nv_half) * mn));
 
         cogito::test::initTensor(A_h, mk);
         cogito::test::initTensor(B_h, nk);
         cogito::test::initTensor(C_h, mn);
 
-        cudaMalloc(&A_d, sizeof(float) * mk);
-        cudaMalloc(&B_d, sizeof(float) * nk);
-        cudaMalloc(&C_d, sizeof(float) * mn);
-        cudaMalloc(&C_std, sizeof(float) * mn);
+        cudaMalloc(&A_d, sizeof(nv_half) * mk);
+        cudaMalloc(&B_d, sizeof(nv_half) * nk);
+        cudaMalloc(&C_d, sizeof(nv_half) * mn);
+        cudaMalloc(&C_std, sizeof(nv_half) * mn);
 
-        cudaMemcpy(A_d, A_h, mk * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(B_d, B_h, nk * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(C_d, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(C_std, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(A_d, A_h, mk * sizeof(nv_half), cudaMemcpyHostToDevice);
+        cudaMemcpy(B_d, B_h, nk * sizeof(nv_half), cudaMemcpyHostToDevice);
+        cudaMemcpy(C_d, C_h, mn * sizeof(nv_half), cudaMemcpyHostToDevice);
+        cudaMemcpy(C_std, C_h, mn * sizeof(nv_half), cudaMemcpyHostToDevice);
     }
 
     void TearDown() override {
@@ -67,12 +67,12 @@ public:
     }
 
 protected:
-    float *A_h, *B_h, *C_h; 
-    float *A_d, *B_d, *C_d, *C_std;
-    float *res_naive, *res_std;
+    nv_half *A_h, *B_h, *C_h; 
+    nv_half *A_d, *B_d, *C_d, *C_std;
+    nv_half *res_naive, *res_std;
     int m, n, k;
     int mn, mk, nk;
-    float alpha, beta;
+    nv_half alpha, beta;
     float gflops;
     cudaError_t status;
     cogito::test::KernelProfiler profiler;

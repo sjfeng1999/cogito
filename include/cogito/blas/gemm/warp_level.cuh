@@ -178,26 +178,116 @@ public:
     }
 };
 
-/*
-template<>
-struct WarpMma<half_t, MmaType::kTensorCore> {
+
+
+
+template<typename T, bool mat_a>
+struct WmmaFragmentSrcIterator {
 public:
     static constexpr int kM = 16;
     static constexpr int kN = 16;
     static constexpr int kK = 16;
-    using FragmentSrcAIteratorT = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::matrix_a, kM, kN, kK, half_t, typename nvcuda::wmma::row_major>;
-    using FragmentSrcBIteratorT = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::matrix_b, kM, kN, kK, half_t, typename nvcuda::wmma::row_major>;
-    using FragmentResIteratorT  = typename nvcuda::wmma::fragment template<typename nvcuda::wmma::accumulator, kM, kN, kK, half_t>;
+    static constexpr int kTileWidth = mat_a ? 128 : 128;
+    static constexpr int kLoop      = 2;
+    using type = T;
+    using FragType = typename std::conditional<mat_a, typename nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, kM, kN, kK, nv_half, nvcuda::wmma::row_major>, 
+                        typename nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, kM, kN, kK, nv_half, nvcuda::wmma::row_major>>::type;
+
+private:
+    cogito_shared_ptr T* ptr_;
+    FragType frag_;
+    int offset_;
 
 public:
+    WmmaFragmentSrcIterator(T* shared_ptr) : ptr_(shared_ptr) {
+        int warpid = threadIdx.x >> 5;
+        if constexpr (mat_a) {
+            offset_ = (warpid >> 2) << 2;
+        } else {
+            offset_ = (warpid & 0x3) << 2;
+        }
+    }
+
     COGITO_DEVICE
-    void operator()(T alpha, FragmentSrcAIteratorT frag_a, FragmentSrcBIteratorT frag_b, T beta, FragmentResIteratorT frag_c){
-        FragmentResIteratorT frag_acc;
-        wmma::mma_sync(acc_frag, frag_a, frag_b, acc_frag);
+    void reset(T* shared_ptr) { ptr_ = shared_ptr; }
+
+    COGITO_DEVICE
+    void load() {
+        nvcuda::wmma::load_matrix_sync(frag_, ptr_ + offset_, kTileWidth);
+    }
+
+    COGITO_DEVICE
+    void operator++(int) { ptr_ += kTileWidth * 4; }
+
+    COGITO_DEVICE 
+    FragType& operator[](int pos) {
+        return frag_;
     }
 };
 
-*/
+
+template<typename T>
+struct WmmaFragmentResIterator {
+public:
+    static constexpr int kM = 16;
+    static constexpr int kN = 16;
+    static constexpr int kK = 16;
+    using type = T;
+    using FragType = nvcuda::wmma::fragment<nvcuda::wmma::accumulator, kM, kN, kK, nv_half>;
+
+private:
+    cogito_device_ptr T* ptr_;
+    FragType frag_;
+    const T beta_;
+    const int ldg_;
+
+public:
+    COGITO_DEVICE
+    WmmaFragmentResIterator(T beta, T* ptr, const int ldg) : beta_(beta), ldg_(ldg) {
+        int warpid = threadIdx.x >> 5;
+        int offset = ((warpid & 0x3) << 2) + ((warpid >> 2) << 2) * ldg_;
+
+        ptr_ += offset;
+        nvcuda::wmma::load_matrix_sync(frag_, ptr_, ldg_);
+    };
+
+    COGITO_DEVICE
+    void store() {
+        nvcuda::wmma::store_matrix_sync(frag_, ptr_, ldg_, nvcuda::wmma::mem_row_major);
+    }
+
+    COGITO_DEVICE 
+    FragType& operator[](int pos) {
+        return frag_;
+    }
+};
+
+
+template<>
+struct WarpMma<nv_half, MmaType::kTensorCore> {
+public:
+    static constexpr int kM = 16;
+    static constexpr int kN = 16;
+    static constexpr int kK = 16;
+    using FragmentSrcAIteratorT = WmmaFragmentSrcIterator<nv_half, true>;
+    using FragmentSrcBIteratorT = WmmaFragmentSrcIterator<nv_half, false>;
+    using FragmentResIteratorT  = WmmaFragmentResIterator<nv_half>;
+
+public:
+    COGITO_DEVICE
+    void operator()(nv_half alpha, FragmentSrcAIteratorT frag_a, FragmentSrcBIteratorT frag_b, nv_half beta, FragmentResIteratorT frag_c){
+
+        for (int i = 0; i < FragmentSrcAIteratorT::kLoop; ++i) {
+            frag_a.load();
+            frag_b.load();
+
+            nvcuda::wmma::mma_sync(frag_c[0], frag_a[0], frag_b[0], frag_c[0]);
+            frag_a++;
+            frag_b++;
+        }
+    }
+};
+
 
 } // namespace detail
 } // namespace blas

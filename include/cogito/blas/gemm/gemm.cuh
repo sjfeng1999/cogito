@@ -36,6 +36,15 @@ struct GemmConfig<float, MmaType::kLegacy> {
     using type = float;
 };
 
+template<>
+struct GemmConfig<nv_half, MmaType::kTensorCore> {
+    static constexpr int kBlockDimX       = 256;
+    static constexpr int kBlockTileWidth  = 128;
+    static constexpr int kBlockTileHeight = 64;
+    static constexpr MmaType kMmaType     = MmaType::kTensorCore;
+    using type = nv_half;
+};
+
 template<typename GemmConfig, typename T = typename GemmConfig::type>
 COGITO_GLOBAL
 void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc) {

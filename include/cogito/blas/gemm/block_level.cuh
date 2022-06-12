@@ -47,6 +47,8 @@ public:
                 tile_x = tid & 0x1;
                 tile_y = tid >> 1;
                 global_ptr_offset_ = (tile_x << 2) + tile_y * ldg_;
+                ThreadLd<T, kLdPolicy>::load(frag_, global_ptr_ + global_ptr_offset_);
+
                 if (tile_y >= 64) {
                     tile_y += 8;
                 }
@@ -55,6 +57,8 @@ public:
                 tile_x = tid & 0x1f;
                 tile_y = tid >> 5;
                 global_ptr_offset_ = (tile_x << 2) + tile_y * ldg_;
+                ThreadLd<T, kLdPolicy>::load(frag_, global_ptr_ + global_ptr_offset_);
+
                 shared_ptr_offset_ = (tile_x << 2) + tile_y * kTileWidth;
             }
         }
@@ -65,24 +69,26 @@ public:
     COGITO_DEVICE
     void update() {
         if constexpr (kTranspose) {             
-            ThreadLd<T, kLdPolicy>::load(frag_, global_ptr_ + global_ptr_offset_);
             ThreadSt<T, kStPolicy>::stripedStore<0, 1, kTileWidth>(frag_, shared_ptr_ + shared_ptr_offset_     , mp::Range2Type<0, 4>{});
+            global_ptr_offset_ += kTileHeight;
         } else {
-            ThreadLd<T, kLdPolicy>::load(frag_, global_ptr_ + global_ptr_offset_);
             ThreadSt<T, kStPolicy>::store(frag_, shared_ptr_ + shared_ptr_offset_);
+            global_ptr_offset_ += kTileHeight * ldg_;
+        }
+        
+        if (!end()) {
+            ThreadLd<T, kLdPolicy>::load(frag_, global_ptr_ + global_ptr_offset_);
         }
     }
 
     COGITO_DEVICE
     void operator++(int) {
+        loop++;
         if constexpr (kTranspose) {
-            global_ptr_offset_ += kTileHeight;
             update();
         } else {
-            global_ptr_offset_ += kTileHeight * ldg_;
             update();
         }
-        loop++;
     }
 
     COGITO_DEVICE

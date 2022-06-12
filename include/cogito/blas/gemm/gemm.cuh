@@ -56,9 +56,8 @@ void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T be
     
     TileSrcAIteratorT iter_a(block_A, lda, shared_a);
     TileSrcBIteratorT iter_b(block_B, ldb, shared_b);
-    __syncthreads();
-    
     TileResIteratorT iter_c(block_C, ldc);
+    __syncthreads();
 
     BlockMmaT op;
     op(alpha, iter_a, iter_b, beta, iter_c);

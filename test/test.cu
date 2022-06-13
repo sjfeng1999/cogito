@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#define COGITO_KERNEL_PROFILER 
+#define COGITO_ENBALE_KERNEL_PROFILER 
 
 // #include "unittest/general/test_general.cuh"
 #include "unittest/blas/test_blas.cuh"

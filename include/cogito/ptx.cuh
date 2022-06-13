@@ -66,6 +66,7 @@ void barSync(){
     );
 }
 
+
 template<int Scale, typename T, typename U = typename std::remove_const<T>::type>
 COGITO_DEVICE
 U* computeEffectiveAddr(T* ptr, int offset) {
@@ -83,6 +84,7 @@ U* computeEffectiveAddr(T* ptr, int offset) {
     return ptr_lea;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<LoadPolicy policy = LoadPolicy::kDefault>
 COGITO_DEVICE 
@@ -121,225 +123,115 @@ void st_32b(void* dst, void* src) {
     *static_cast<float*>(dst) = *static_cast<float*>(src);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<>
-COGITO_DEVICE 
-void ld_128b<LoadPolicy::kCA>(void* dst, void* src) {
-    float4 val;
-    asm volatile(
-        "ld.global.ca.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
-        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float4*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_64b<LoadPolicy::kCA>(void* dst, void* src) {
-    float2 val;
-    asm volatile(
-        "ld.global.ca.v2.f32     { %0, %1 },    [%2];  \n\t"
-        :"=f"(val.x), "=f"(val.y)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float2*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_32b<LoadPolicy::kCA>(void* dst, void* src) {
-    float val;
-    asm volatile(
-        "ld.global.ca.f32     %0,    [%1];  \n\t"
-        :"=f"(val)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float*>(dst) = val;
-}
-
-
-
-template<>
-COGITO_DEVICE 
-void ld_128b<LoadPolicy::kCS>(void* dst, void* src) {
-    float4 val;
-    asm volatile(
-#if __CUDA_ARCH__ >= 800
-        "ld.global.cs.L2::256B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
-#else 
-        "ld.global.cs.L2::128B.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
-#endif
-        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float4*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_64b<LoadPolicy::kCS>(void* dst, void* src) {
-    float2 val;
-    asm volatile(
-#if __CUDA_ARCH__ >= 800
-        "ld.global.cs.L2::256B.v2.f32     { %0, %1 },    [%2];  \n\t"
-#else 
-        "ld.global.cs.L2::128B.v2.f32     { %0, %1 },    [%2];  \n\t"
-#endif
-        :"=f"(val.x), "=f"(val.y)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float2*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_32b<LoadPolicy::kCS>(void* dst, void* src) {
-    float val;
-    asm volatile(
-#if __CUDA_ARCH__ >= 800
-        "ld.global.cs.L2::256B.f32     %0,    [%1];  \n\t"
-#else 
-        "ld.global.cs.L2::128B.f32     %0,    [%1];  \n\t"
-#endif
-        :"=f"(val)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float*>(dst) = val;
-}
-
-
-
-template<>
-COGITO_DEVICE 
-void ld_128b<LoadPolicy::kShared>(void* dst, void* src) {
-    float4 val;
-    asm volatile(
-        "ld.shared.v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"
-        :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float4*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_64b<LoadPolicy::kShared>(void* dst, void* src) {
-    float2 val;
-    asm volatile(
-        "ld.shared.v2.f32     { %0, %1 },    [%2];  \n\t"
-        :"=f"(val.x), "=f"(val.y)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float2*>(dst) = val;
-}
-
-template<>
-COGITO_DEVICE 
-void ld_32b<LoadPolicy::kShared>(void* dst, void* src) {
-    float val;
-    asm volatile(
-        "ld.shared.f32     %0,    [%1];  \n\t"
-        :"=f"(val)
-        :"l"(src)
-        :"memory"
-    );
-    *static_cast<float*>(dst) = val;
-}
-
-
-
-
-template<>
-COGITO_DEVICE 
-void st_128b<StorePolicy::kWT>(void* dst, void* src) {
-    const float4 val = *static_cast<float4*>(src);
-    asm volatile(
-        "st.global.wt.v4.f32      [%4],   { %0, %1, %2, %3 };  \n\t"
-        ::"f"(val.x), "f"(val.y), "f"(val.z), "f"(val.w), "l"(dst)
-        :"memory"
-    );
-}
-
-template<>
-COGITO_DEVICE 
-void st_64b<StorePolicy::kWT>(void* dst, void* src) {
-    const float2 val = *static_cast<float2*>(src);
-    asm volatile(
-        "st.global.wt.v2.f32      [%2],   { %0, %1 };  \n\t"
-        ::"f"(val.x), "f"(val.y), "l"(dst)
-        :"memory"
-    );
-}
-
-template<>
-COGITO_DEVICE 
-void st_32b<StorePolicy::kWT>(void* dst, void* src) {
-    const float val = *static_cast<float*>(src);
-    asm volatile(
-        "st.global.wt.f32      [%1],   %0;  \n\t"
-        ::"f"(val), "l"(dst)
-        :"memory"
-    );
-}
-
-
-
-template<>
-COGITO_DEVICE 
-void st_128b<StorePolicy::kShared>(void* dst, void* src) {
-    const float4 val = *static_cast<float4*>(src);
-    asm volatile(
-        "st.shared.v4.f32      [%4],   { %0, %1, %2, %3 };  \n\t"
-        ::"f"(val.x), "f"(val.y), "f"(val.z), "f"(val.w), "l"(dst)
-        :"memory"
-    );
-}
-
-template<>
-COGITO_DEVICE 
-void st_64b<StorePolicy::kShared>(void* dst, void* src) {
-    const float2 val = *static_cast<float2*>(src);
-    asm volatile(
-        "st.shared.v2.f32      [%2],   { %0, %1 };  \n\t"
-        ::"f"(val.x), "f"(val.y), "l"(dst)
-        :"memory"
-    );
-}
-
-template<>
-COGITO_DEVICE 
-void st_32b<StorePolicy::kShared>(void* dst, void* src) {
-    const float val = *static_cast<float*>(src);
-    asm volatile(
-        "st.shared.f32      [%1],   %0;  \n\t"
-        ::"f"(val), "l"(dst)
-        :"memory"
-    );
-}
-
-#define cogito_load_128b(loadPolicy, loadModifier)                      \
-    template<>                                                          \
-    COGITO_DEVICE                                                       \
-    void load_128b<StorePolicy::loadPolicy>(void* dst, void* src) {     \
-        float4 val; \
-        asm volatile(   \
-            "ld."#loadModifier".v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"  \
-            :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)  \
-            :"l"(src)  \
-            :"memory"  \
-        );  \
-        *static_cast<float4*>(dst) = val;  \
+#define cogito_load_128b(loadPolicy, loadModifier)                                               \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void ld_128b<loadPolicy>(void* dst, void* src) {                                             \
+        float4 val;                                                                              \
+        asm volatile(                                                                            \
+            "ld."#loadModifier".v4.f32     { %0, %1, %2, %3 },    [%4];  \n\t"                   \
+            :"=f"(val.x), "=f"(val.y), "=f"(val.z), "=f"(val.w)                                  \
+            :"l"(src)                                                                            \
+            :"memory"                                                                            \
+        );                                                                                       \
+        *static_cast<float4*>(dst) = val;                                                        \
     }  
 
+#define cogito_load_64b(loadPolicy, loadModifier)                                                \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void ld_64b<loadPolicy>(void* dst, void* src) {                                              \
+        float2 val;                                                                              \
+        asm volatile(                                                                            \
+            "ld."#loadModifier".v2.f32     { %0, %1 },    [%2];  \n\t"                           \
+            :"=f"(val.x), "=f"(val.y)                                                            \
+            :"l"(src)                                                                            \
+            :"memory"                                                                            \
+        );                                                                                       \
+        *static_cast<float2*>(dst) = val;                                                        \
+    }  
+
+#define cogito_load_32b(loadPolicy, loadModifier)                                                \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void ld_32b<loadPolicy>(void* dst, void* src) {                                              \
+        float val;                                                                               \
+        asm volatile(                                                                            \
+            "ld."#loadModifier".f32     %0,    [%1];  \n\t"                                      \
+            :"=f"(val)                                                                           \
+            :"l"(src)                                                                            \
+            :"memory"                                                                            \
+        );                                                                                       \
+        *static_cast<float*>(dst) = val;                                                         \
+    }  
+
+cogito_load_128b(LoadPolicy::kCA, global.ca)
+cogito_load_128b(LoadPolicy::kCG, global.cg)
+cogito_load_128b(LoadPolicy::kCS, global.cs)
+
+cogito_load_64b(LoadPolicy::kCA, global.ca)
+cogito_load_64b(LoadPolicy::kCG, global.cg)
+cogito_load_64b(LoadPolicy::kCS, global.cs)
+
+cogito_load_32b(LoadPolicy::kCA, global.ca)
+cogito_load_32b(LoadPolicy::kCG, global.cg)
+cogito_load_32b(LoadPolicy::kCS, global.cs)
+
+
+#undef cogito_load_128b
+#undef cogito_load_64b
+#undef cogito_load_32b
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+#define cogito_store_128b(storePolicy, storeModifier)                                            \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void st_128b<storePolicy>(void* dst, void* src) {                                            \
+        const float4 val = *static_cast<float4*>(src);                                           \
+        asm volatile(                                                                            \
+            "st."#storeModifier".v4.f32     [%4],   { %0, %1, %2, %3 };  \n\t"                   \
+            ::"f"(val.x), "f"(val.y), "f"(val.z), "f"(val.w), "l"(dst)                           \
+            :"memory"                                                                            \
+        );                                                                                       \
+    }  
+
+#define cogito_store_64b(storePolicy, storeModifier)                                             \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void st_64b<storePolicy>(void* dst, void* src) {                                             \
+        const float2 val = *static_cast<float2*>(src);                                           \
+        asm volatile(                                                                            \
+            "st."#storeModifier".v2.f32     [%2],   { %0, %1 };  \n\t"                           \
+            ::"f"(val.x), "f"(val.y), "l"(dst)                                                   \
+            :"memory"                                                                            \
+        );                                                                                       \
+    }  
+
+#define cogito_store_32b(storePolicy, storeModifier)                                             \
+    template<>                                                                                   \
+    COGITO_DEVICE                                                                                \
+    void st_32b<storePolicy>(void* dst, void* src) {                                             \
+        const float val = *static_cast<float*>(src);                                             \
+        asm volatile(                                                                            \
+            "st."#storeModifier".f32     [%1],  %0;  \n\t"                                       \
+            ::"f"(val), "l"(dst)                                                                 \
+            :"memory"                                                                            \
+        );                                                                                       \
+    }  
+
+cogito_store_128b(StorePolicy::kWT, global.wt)
+cogito_store_64b(StorePolicy::kWT, global.wt)
+cogito_store_32b(StorePolicy::kWT, global.wt)
+
+
+#undef cogito_store_128b
+#undef cogito_store_64b
+#undef cogito_store_32b
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 COGITO_DEVICE 
 void prefetch_l2(void* src) {
@@ -359,6 +251,7 @@ void prefetch_l1(void* src) {
     );
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ptx
 } // namespace cogito

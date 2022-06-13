@@ -34,11 +34,11 @@ public:
     }
 
     template<typename KernelOp, typename... Args>
-    Status profile(float gflops, Args... args){
+    Status profile(float gflops, Args... args) {
 
         Status res = Status::kSuccess;
 
-#ifdef COGITO_KERNEL_PROFILER 
+#ifdef COGITO_ENBALE_KERNEL_PROFILER 
         minVal = std::numeric_limits<float>::max();
         maxVal = 0;
         avgVal = 0;

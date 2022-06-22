@@ -173,6 +173,7 @@ public:
             frag_a++;
             frag_b++;
         }
+        __syncthreads();
     }
 };
 

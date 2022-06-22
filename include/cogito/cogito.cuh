@@ -93,7 +93,7 @@ struct Product<Val> {
 
 template<int Val>
 struct IsPow2 {
-    static constexpr int value = (Val & Val - 1) == 0;
+    static constexpr bool value = (Val & Val - 1) == 0;
 };
 
 template<int Val>

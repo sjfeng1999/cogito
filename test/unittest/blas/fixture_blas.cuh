@@ -84,6 +84,6 @@ INSTANTIATE_TEST_SUITE_P(BlasPart,
                          testing::Combine(testing::Values(2048),
                                           testing::Values(2048),
                                           testing::Values(2048),
-                                          testing::Values(1.2),
-                                          testing::Values(0.6)));
+                                          testing::Values(2.0),
+                                          testing::Values(0.5)));
 

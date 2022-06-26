@@ -21,31 +21,49 @@ namespace detail {
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
-void ElementWiseKernel(const T* input, T* output, const int size){
+void ElementWiseKernel(T* input, T* output, const int size){
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
+    int ctaid = blockIdx.x;
+    int block_offset = ctaid * BlockDimX * ItemPerThread;
+
+    T* block_input = input + block_offset;
+    T* block_output = output + block_offset;
+
     BlockElementWiseT block_op;
-    block_op(input, output, size);
+    block_op(block_input, block_output, size);
 }
 
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
-void ElementWiseKernel(const T* input, T* output, const T operand, const int size){
+void ElementWiseKernel(T* input, T* output, const T operand, const int size){
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
+    int ctaid = blockIdx.x;
+    int block_offset = ctaid * BlockDimX * ItemPerThread;
+
+    T* block_input = input + block_offset;
+    T* block_output = output + block_offset;
+
     BlockElementWiseT block_op;
-    block_op(input, output, operand, size);
+    block_op(block_input, block_output, operand, size);
 }
 
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
-void ElementWiseKernel(const T* input, T* output, T* operand, const int size){
+void ElementWiseKernel(T* input, T* output, T* operand, const int size){
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
+    int ctaid = blockIdx.x;
+    int block_offset = ctaid * BlockDimX * ItemPerThread;
+
+    T* block_input = input + block_offset;
+    T* block_output = output + block_offset;
+
     BlockElementWiseT block_op;
-    block_op(input, output, *operand, size);
+    block_op(block_input, block_output, *operand, size);
 }
 
 
@@ -60,7 +78,7 @@ public:
     static constexpr int kBlockDimX = 256;
     
 public:
-    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
+    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr) {
         
         dim3 blockDim(kBlockDimX, 1, 1);
 
@@ -80,7 +98,7 @@ public:
     }
 
     // operand is Host-Value
-    cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = nullptr){
+    cudaError_t operator()(T* input, T* output, const T operand, int size, cudaStream_t stream = nullptr) {
 
         dim3 blockDim(kBlockDimX, 1, 1);
 
@@ -100,7 +118,7 @@ public:
     }
 
     // operand is Device-Pointer
-    cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = nullptr){
+    cudaError_t operator()(T* input, T* output, T* operand, int size, cudaStream_t stream = nullptr) {
 
         dim3 blockDim(kBlockDimX, 1, 1);
 

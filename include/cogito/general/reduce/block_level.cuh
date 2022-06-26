@@ -26,16 +26,15 @@ public:
 
 public:
     COGITO_DEVICE 
-    void operator()(T* input, T* output, int size){
+    void operator()(T* input, T* output, int size) {
+
         int tid = threadIdx.x;
-        int ctaid = blockIdx.x;
-        int block_offset = ctaid * kBlockDimX;
+        int offset = tid * kItemsPerThread;
 
         ShapedTensorT input_tensor;
         const T identity = ReduceOpT::kIdentity;
-        
-        if (tid + block_offset < size) {
-            ThreadLd<T>::load(input_tensor, input + block_offset + tid);
+        if (tid + offset < size) {
+            ThreadLd<T>::load(input_tensor, input + offset);
         } else {
             ThreadLd<T>::load(input_tensor, identity);
         }
@@ -54,20 +53,21 @@ public:
         if (laneid == 0){
             warp_aggregates[warpid] = warp_res;
         }
-
         __syncthreads();
-        if (tid == 0){
-            ReduceOpT op;
 
+        if (tid == 0){
             COGITO_PRAGMA_UNROLL
             for (int i = 1; i < kWarpNums; ++i){
-                warp_res = op(warp_res, warp_aggregates[i]);
+                warp_res = thread_op(warp_res, warp_aggregates[i]);
             }
-            output[ctaid] = warp_res;
+            *output = warp_res;
         }
     }
 };
 
+
+template <typename T, template<typename> class ReduceOp, int BlockDimX>
+struct BlockAllReduce;
 
 } // namespace detail
 } // namespace general

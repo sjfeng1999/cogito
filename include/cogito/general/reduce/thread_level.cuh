@@ -20,7 +20,7 @@ public:
 
 public:
     COGITO_DEVICE
-    T operator()(const ShapedTensorT& input_tensor){
+    T operator()(const ShapedTensorT& input_tensor) {
         ReduceOpT op;
         T res = input_tensor[0];
         

@@ -30,10 +30,10 @@ public:
 
 public:
     COGITO_DEVICE
-    void operator()(const T* input, T* output, const int size){
+    void operator()(const T* input, T* output, const int size) {
+
         int tid = threadIdx.x;
-        int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kItemsPerThread;
+        int offset = tid * kItemsPerThread;
 
         ShapedTensorT tensor;
         // TODO (strip condition)
@@ -52,10 +52,10 @@ public:
     } 
 
     COGITO_DEVICE
-    void operator()(const T* input, T* output, const T& operand, const int size){
+    void operator()(const T* input, T* output, const T& operand, const int size) {
+
         int tid = threadIdx.x;
-        int ctaid = blockIdx.x;
-        int offset = (ctaid * kBlockDimX + tid) * kItemsPerThread;
+        int offset = tid * kItemsPerThread;
 
         ShapedTensorT tensor;
         // TODO (strip condition)

@@ -22,8 +22,14 @@ COGITO_KERNEL
 void ReduceSingleKernel(T* input, T* output, int size) {
     using BlockReduceT = BlockReduce<T, BinaryOp, BlockDimX, 1>;
 
+    int ctaid = blockIdx.x;
+    int block_offset = ctaid * BlockDimX;
+
+    T* block_input = input + block_offset;
+    T* block_output = output + ctaid;
+
     BlockReduceT op;
-    op(input, output, size);
+    op(block_input, block_output, size);
 }
 
 template<typename T, template<typename> class BinaryOp>

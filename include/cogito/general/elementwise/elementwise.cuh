@@ -18,10 +18,9 @@ namespace general {
 
 namespace detail {
 
-
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
-void ElementWiseKernel(T* input, T* output, const int size){
+void ElementWiseKernel(T* input, T* output, const int size) {
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
     int ctaid = blockIdx.x;
@@ -37,7 +36,23 @@ void ElementWiseKernel(T* input, T* output, const int size){
 
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
 COGITO_KERNEL
-void ElementWiseKernel(T* input, T* output, const T operand, const int size){
+void ElementWiseKernel(T* input, T* output, const T operand, const int size) {
+    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
+
+    int ctaid = blockIdx.x;
+    int block_offset = ctaid * BlockDimX * ItemPerThread;
+
+    T* block_input = input + block_offset;
+    T* block_output = output + block_offset;
+
+    BlockElementWiseT block_op;
+    block_op(block_input, block_output, &operand, size);
+}
+
+
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
+COGITO_KERNEL
+void ElementWiseKernel(T* input, T* output, T* operand, const int size) {
     using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
 
     int ctaid = blockIdx.x;
@@ -50,27 +65,9 @@ void ElementWiseKernel(T* input, T* output, const T operand, const int size){
     block_op(block_input, block_output, operand, size);
 }
 
-
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int ItemPerThread = 1>
-COGITO_KERNEL
-void ElementWiseKernel(T* input, T* output, T* operand, const int size){
-    using BlockElementWiseT = BlockElementWise<T, ElementWiseOp, BlockDimX, ItemPerThread>;
-
-    int ctaid = blockIdx.x;
-    int block_offset = ctaid * BlockDimX * ItemPerThread;
-
-    T* block_input = input + block_offset;
-    T* block_output = output + block_offset;
-
-    BlockElementWiseT block_op;
-    block_op(block_input, block_output, *operand, size);
-}
-
-
 } // namsespace detail
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-
 
 template<typename T, template<typename> class ElementWiseOp>
 struct ElementWise {
@@ -82,11 +79,11 @@ public:
         
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        if (size % 4 == 0){
+        if (size % 4 == 0) {
             dim3 gridDim(UPPER_DIV(size >> 2, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, size);
 
-        } else if (size % 2 == 0){
+        } else if (size % 2 == 0) {
             dim3 gridDim(UPPER_DIV(size >> 1, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, size);
 
@@ -102,11 +99,11 @@ public:
 
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        if (size % 4 == 0){
+        if (size % 4 == 0) {
             dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
 
-        } else if (size % 2 == 0){
+        } else if (size % 2 == 0) {
             dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
 
@@ -122,11 +119,11 @@ public:
 
         dim3 blockDim(kBlockDimX, 1, 1);
 
-        if (size % 4 == 0){
+        if (size % 4 == 0) {
             dim3 gridDim(UPPER_DIV(size / 4, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
 
-        } else if (size % 2 == 0){
+        } else if (size % 2 == 0) {
             dim3 gridDim(UPPER_DIV(size / 2, kBlockDimX), 1, 1);
             detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gridDim, blockDim, 0, stream>>>(input, output, operand, size);
 

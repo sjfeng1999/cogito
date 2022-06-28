@@ -16,6 +16,8 @@ struct Sigmoid;
 template<typename T>
 struct Softmax;
 
+template<typename T>
+struct PRelu;
 
 enum class ConvType {
     kImplicitGemm,
@@ -40,6 +42,7 @@ struct LayerNorm2d;
 
 #include "cogito/dnn/activation/sigmoid.cuh"
 #include "cogito/dnn/activation/softmax.cuh"
+#include "cogito/dnn/activation/prelu.cuh"
 
 // #include "cogito/dnn/conv/conv.cuh"
 

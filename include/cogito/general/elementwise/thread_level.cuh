@@ -24,7 +24,7 @@ public:
         ElementWiseOpT op;
 
         COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kItemsPerThread; ++i){
+        for (int i = 0; i < kItemsPerThread; ++i) {
             output_tensor[i] = op(input_tensor[i]);
         }
     } 
@@ -34,7 +34,7 @@ public:
         ElementWiseOpT op;
 
         COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kItemsPerThread; ++i){
+        for (int i = 0; i < kItemsPerThread; ++i) {
             output_tensor[i] = op(input_tensor[i], operand);
         }
     } 

@@ -13,11 +13,12 @@
 #define COGITO_GLOBAL                       __global__
 #define COGITO_KERNEL                       __global__
 #define COGITO_DEVICE                       __device__ __forceinline__  
+#define COGITO_DEVICE_INVOKE                __device__ __noinline__  
 #define COGITO_HOST_DEVICE                  __host__ __device__ __forceinline__  
 
 #define COGITO_PRAGMA_UNROLL                #pragma unroll
 #define COGITO_PRAGMA_NO_UNROLL             #pragma unroll 1
-#define COGITO_LAUNCH_BOUND(n)              __launch__bounds__(n)
+#define COGITO_LAUNCH_BOUNDS(n)             __launch_bounds__(n)
 
 #define UPPER_DIV(x, y)                     (((x) + (y) - 1) / (y))
 

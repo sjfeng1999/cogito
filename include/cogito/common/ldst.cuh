@@ -66,7 +66,7 @@ public:
 
     template<int TensorSize, int Start = 0, int Length = TensorSize>
     COGITO_DEVICE
-    static void load(ShapedTensor<T, TensorSize>& tensor, const T const_val) {
+    static void load(ShapedTensor<T, TensorSize>& tensor, const T& const_val) {
         static_assert(Start + Length <= TensorSize, "Load size exceed tensor size");
         COGITO_PRAGMA_UNROLL
         for (int i = Start; i < Start + Length; ++i) {
@@ -77,6 +77,7 @@ public:
     template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
     static void stripedLoad(ShapedTensor<T, TensorSize>& tensor, const T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(RangeStart < RangeEnd, "mp::Range2Type : RangeStart should be smaller than RangeEnd");
         static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
         ThreadLd::load<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
         ThreadLd::stripedLoad<Start, BlockSize, LineSize>(tensor, ptr + LineSize, mp::Range2Type<RangeStart + 1, RangeEnd>{});
@@ -88,6 +89,7 @@ public:
     template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
     static void stripedLoad(ShapedTensor<T, TensorSize>& tensor, const T* ptr, const int ldg, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(RangeStart < RangeEnd, "mp::Range2Type : RangeStart should be smaller than RangeEnd");
         static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
         ThreadLd::load<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
         ThreadLd::stripedLoad<Start, BlockSize>(tensor, ptr + ldg, ldg, mp::Range2Type<RangeStart + 1, RangeEnd>{});
@@ -153,6 +155,7 @@ public:
     template<int Start, int BlockSize, int LineSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
     static void stripedStore(const ShapedTensor<T, TensorSize>& tensor, T* ptr, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(RangeStart < RangeEnd, "mp::Range2Type : RangeStart should be smaller than RangeEnd");
         static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
         ThreadSt::store<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
         ThreadSt::stripedStore<Start, BlockSize, LineSize>(tensor, ptr + LineSize, mp::Range2Type<RangeStart + 1, RangeEnd>{});
@@ -164,6 +167,7 @@ public:
     template<int Start, int BlockSize, int TensorSize, int RangeStart, int RangeEnd>
     COGITO_DEVICE
     static void stripedStore(const ShapedTensor<T, TensorSize>& tensor, T* ptr, const int ldg, mp::Range2Type<RangeStart, RangeEnd> /* unused */) {
+        static_assert(RangeStart < RangeEnd, "mp::Range2Type : RangeStart should be smaller than RangeEnd");
         static_assert(Start + (RangeEnd - RangeStart - 1) * BlockSize < TensorSize);
         ThreadSt::store<TensorSize, Start + RangeStart * BlockSize, BlockSize>(tensor, ptr);
         ThreadSt::stripedStore<Start, BlockSize>(tensor, ptr + ldg, ldg, mp::Range2Type<RangeStart + 1, RangeEnd>{});
@@ -172,6 +176,11 @@ public:
     COGITO_DEVICE
     static void stripedStore(const ShapedTensor<T, TensorSize>&, T*, const int, mp::Range2Type<RangeEnd, RangeEnd> /* unused */) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename T, LoadPolicy LdPolicy = LoadPolicy::kDefault, StorePolicy StPolicy = StorePolicy::kDefault>
+struct ThreadLdSt;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +209,7 @@ public:
     }
 };
 
+
 template<typename T, StorePolicy StPolicy = StorePolicy::kDefault>
 struct WarpSt {
 public:
@@ -225,6 +235,10 @@ public:
     }
 };
 
+
+template<typename T, LoadPolicy LdPolicy = LoadPolicy::kDefault, StorePolicy StPolicy = StorePolicy::kDefault>
+struct WarpLdSt;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T, int GroupSize, LoadPolicy LdPolicy = LoadPolicy::kDefault>
@@ -244,6 +258,7 @@ public:
     }
 };
 
+
 template<typename T, int GroupSize, StorePolicy StPolicy = StorePolicy::kDefault>
 struct ThreadGroupSt {
 public:
@@ -260,6 +275,10 @@ public:
         ThreadSt<T, kStPolicy>::stripedStore<Start, BlockSize, BlockSize * kGroupSize>(tensor, ptr + group_id * BlockSize, mp::Range2Type<RangeStart, RangeEnd>{});
     }
 };
+
+
+template<typename T, int GroupSize, LoadPolicy LdPolicy = LoadPolicy::kDefault, StorePolicy StPolicy = StorePolicy::kDefault>
+struct ThreadGroupLdSt;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

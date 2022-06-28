@@ -56,9 +56,10 @@ public:
         __syncthreads();
 
         if (tid == 0){
+            ReduceOpT reduce_op;
             COGITO_PRAGMA_UNROLL
             for (int i = 1; i < kWarpNums; ++i){
-                warp_res = thread_op(warp_res, warp_aggregates[i]);
+                warp_res = reduce_op(warp_res, warp_aggregates[i]);
             }
             *output = warp_res;
         }
@@ -67,7 +68,7 @@ public:
 
 
 template <typename T, template<typename> class ReduceOp, int BlockDimX>
-struct BlockAllReduce;
+struct BlockReduceAll;
 
 } // namespace detail
 } // namespace general

@@ -25,7 +25,7 @@ public:
         T res = input_tensor[0];
         
         COGITO_PRAGMA_UNROLL
-        for (int i = 1; i < kItemsPerThread; ++i){
+        for (int i = 1; i < kItemsPerThread; ++i) {
             res = op(res, input_tensor[i]);
         }
         return res;

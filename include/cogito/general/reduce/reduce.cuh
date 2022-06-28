@@ -59,7 +59,7 @@ public:
     static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
 
 public:
-    cudaError_t operator()(T* input, T* output, int size, cudaStream_t stream = nullptr){
+    Status operator()(T* input, T* output, int size, cudaStream_t stream = nullptr) {
         int gridDimX = UPPER_DIV(size, kBlockWorkload);
         
         dim3 gridDim(gridDimX, 1, 1);
@@ -71,14 +71,15 @@ public:
         
         } else {
             T* global_workspace;
-            cudaMalloc(&global_workspace, sizeof(T) * gridDimX);
+            cudaMallocAsync(&global_workspace, sizeof(T) * gridDimX, stream);
 
             detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, global_workspace, size);
             detail::ReduceFinalKernel<T, ReduceOp><<<1, 1>>>(global_workspace, output, gridDimX);
 
-            cudaFree(global_workspace);
+            cudaFreeAsync(global_workspace, stream);
         }
-        return cudaPeekAtLastError();
+
+        return Status::kSuccess;
     }
 };
 

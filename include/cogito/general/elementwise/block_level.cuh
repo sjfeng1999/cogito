@@ -8,64 +8,67 @@
 #include "cogito/common/ldst.cuh"
 #include "cogito/general/elementwise/thread_level.cuh"
 
-namespace cogito {
-namespace general {
-namespace detail {
+namespace cogito::general::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize, int stripSize = 1>
+template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize, int stripSize, bool Full>
 struct BlockElementWise {
 public:
-    static constexpr int kElementSize    = sizeof(T);
-    static constexpr int kBlockDimX      = BlockDimX;
-    static constexpr int kBlockSize      = blockSize;
-    static constexpr int kStripSize      = stripSize;
-    static constexpr int kItemsPerThread = kBlockSize * kStripSize;
-    static constexpr int kWorkloadLine   = kBlockDimX * kItemsPerThread;
-    static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCA;
+    static constexpr bool kFull        = Full;
+    static constexpr int kBlockDimX    = BlockDimX;
+    static constexpr int kBlockSize    = blockSize;
+    static constexpr int kStripSize    = stripSize;
+    static constexpr int kWorkloadLine = kBlockDimX * kBlockSize * kStripSize;
+    static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCS;
     static constexpr StorePolicy kStPolicy = StorePolicy::kWT;
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kItemsPerThread>;
-    using ShapedTensorT        = ShapedTensor<T, kItemsPerThread>;
+    using ShapedTensorT        = ShapedTensor<T, kBlockSize>;
+    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kBlockSize>;
 
 public:
     COGITO_DEVICE
     void operator()(const T* input, T* output, const int size) {
         int tid = threadIdx.x;
-        int offset = tid * kItemsPerThread;
+        int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        // TODO (strip condition)
-        if (offset < size) {
-            ThreadLd<T, kLdPolicy>::load(tensor, 
-                ptx::computeEffectiveAddr<mp::Log2<kElementSize>::value>(input, offset));
-        }
-        {
-            ThreadElementWiseOpT thread_op;
-            thread_op(tensor, tensor);
-        }
-        if (offset < size) {
-            ThreadSt<T, kStPolicy>::store(tensor, 
-                ptx::computeEffectiveAddr<mp::Log2<kElementSize>::value>(output, offset));
+        ThreadElementWiseOpT thread_op;
+
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kStripSize; ++i) {
+            if constexpr (kFull) {
+                ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+                thread_op(tensor, tensor);
+                ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+            } else if (offset < size) {
+                ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+                thread_op(tensor, tensor);
+                ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+            }
+            offset += kWorkloadLine;
         }
     } 
 
     COGITO_DEVICE
-    void operator()(const T* input, T* output, const T* operand, const int size) {
+    void operator()(const T* input, T* output, const T operand, const int size) {
         int tid = threadIdx.x;
-        int offset = tid * kItemsPerThread;
+        int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        // TODO (strip condition)
-        if (offset < size) {
-            ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
-        }
-        {
-            ThreadElementWiseOpT thread_op;
-            thread_op(tensor, tensor, *operand);
-        }
-        if (offset < size) {
-            ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+        ThreadElementWiseOpT thread_op;
+
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kStripSize; ++i) {
+            if constexpr (kFull) {
+                ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+                thread_op(tensor, operand, tensor);
+                ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+            } else if (offset < size) {
+                ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+                thread_op(tensor, operand, tensor);
+                ThreadSt<T, kStPolicy>::store(tensor, output + offset);
+            }
+            offset += kWorkloadLine;
         }
     } 
 };
@@ -74,14 +77,13 @@ public:
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize>
 struct BlockElementWiseAll {
 public:
-    static constexpr int kElementSize  = sizeof(T);
     static constexpr int kBlockDimX    = BlockDimX;
     static constexpr int kBlockSize    = blockSize;
     static constexpr int kWorkloadLine = kBlockDimX * kBlockSize;
     static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCS;
     static constexpr StorePolicy kStPolicy = StorePolicy::kWT;
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kBlockSize>;
     using ShapedTensorT        = ShapedTensor<T, kBlockSize>;
+    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kBlockSize>;
 
 public:
     COGITO_DEVICE
@@ -93,14 +95,14 @@ public:
         ThreadElementWiseOpT thread_op;
         
         for (; offset < size; offset += kWorkloadLine) {
-            ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
+            ThreadLd<T, kLdPolicy>::load(tensor, input + offset) ;
             thread_op(tensor, tensor);
             ThreadSt<T, kStPolicy>::store(tensor, output + offset);
         } 
     } 
 
     COGITO_DEVICE
-    void operator()(const T* input, T* output, const T* operand, const int size) {
+    void operator()(const T* input, T* output, const T& operand, const int size) {
         int tid = threadIdx.x;
         int offset = tid * kBlockSize;
 
@@ -109,7 +111,7 @@ public:
 
         for (; offset < size; offset += kWorkloadLine) {
             ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
-            thread_op(tensor, tensor, *operand);
+            thread_op(tensor, operand, tensor);
             ThreadSt<T, kStPolicy>::store(tensor, output + offset);
         };
     } 
@@ -119,6 +121,4 @@ public:
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize>
 struct BlockElementWiseTwice;
 
-} // namespace detail
-} // namespace general
 } // namespace cogito

@@ -5,8 +5,7 @@
 
 #pragma once 
 
-namespace cogito {
-namespace blas {
+namespace cogito::blas {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -18,7 +17,9 @@ enum class MmaType {
 template<typename T, MmaType type>
 struct Gemm;
 
-} // namespace blas
-} // namespace cogito
+template<typename T, MmaType type>
+struct GemmSplitK;
+
+} // namespace cogito::blas
 
 #include "cogito/blas/gemm/gemm.cuh"

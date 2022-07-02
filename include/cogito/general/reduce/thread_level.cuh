@@ -5,9 +5,7 @@
 
 #pragma once
 
-namespace cogito {
-namespace general {
-namespace detail {
+namespace cogito::general::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -15,8 +13,8 @@ template<typename T, template<typename> class ReduceOp, int ItemsPerThread>
 struct ThreadReduce {
 public:
     static constexpr int kItemsPerThread = ItemsPerThread;
-    using ReduceOpT     = ReduceOp<T>;
     using ShapedTensorT = ShapedTensor<T, kItemsPerThread>;
+    using ReduceOpT     = ReduceOp<T>;
 
 public:
     COGITO_DEVICE
@@ -32,6 +30,4 @@ public:
     } 
 };
 
-} // namespace detail
-} // namespace general
-} // namespace cogito
+} // namespace cogito::general::detail

@@ -8,9 +8,7 @@
 #include "cogito/cogito.cuh"
 #include "cogito/general/reduce/thread_level.cuh"
 
-namespace cogito {
-namespace general {
-namespace detail {
+namespace cogito::general::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +50,4 @@ public:
     }
 };
 
-
-} // namespace detail
-} // namespace general
-} // namespace cogito
+} // namespace cogito::general::detail

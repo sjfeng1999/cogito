@@ -10,9 +10,7 @@
 #include "cogito/common/ldst.cuh"
 #include "cogito/blas/gemm/thread_level.cuh"
 
-namespace cogito {
-namespace blas {
-namespace detail {
+namespace cogito::blas::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -197,6 +195,4 @@ public:
 // };
 
 
-} // namespace detail
-} // namespace blas
-} // namespace cogito
+} // namespace cogito::blas::detail

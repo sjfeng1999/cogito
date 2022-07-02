@@ -11,8 +11,7 @@
 #include "cogito/general/general.cuh"
 #include "cogito/general/elementwise/block_level.cuh"
 
-namespace cogito {
-namespace general {
+namespace cogito::general {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -102,6 +101,4 @@ public:
     }
 };
 
-
-} // namespace general
-} // namespace cogito
+} // namespace cogito::general

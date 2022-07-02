@@ -7,8 +7,7 @@
 
 #include "cogito/blas/gemm/block_level.cuh"
 
-namespace cogito {
-namespace blas {
+namespace cogito::blas {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -16,6 +15,7 @@ namespace detail {
 
 template<int M, int N, int K>
 struct GemmShape {
+public:
     static constexpr int kM = M;
     static constexpr int kN = N;
     static constexpr int kK = K;
@@ -29,15 +29,17 @@ struct GemmConfig {};
 
 template<>
 struct GemmConfig<float, MmaType::kLegacy> {
+public:
     static constexpr int kBlockDimX       = 256;
     static constexpr int kBlockTileWidth  = 128;
     static constexpr int kBlockTileHeight = 128;
+    static constexpr int kSplitKSize      = 1024;
     static constexpr MmaType kMmaType     = MmaType::kLegacy;
     using type = float;
 };
 
 template<typename GemmConfig, typename T = typename GemmConfig::type>
-COGITO_GLOBAL
+COGITO_GLOBAL 
 void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc) {
     using BlockMmaT = BlockMma<typename GemmConfig::type, GemmConfig::kMmaType>;
     using TileSrcAIteratorT = typename BlockMmaT::TileSrcAIteratorT;  
@@ -54,14 +56,19 @@ void GemmKernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T be
     T* block_B = B + ctaid_x * GemmConfig::kBlockTileWidth;
     T* block_C = C + ctaid_y * GemmConfig::kBlockTileHeight * ldc + ctaid_x * GemmConfig::kBlockTileWidth;
     
-    TileSrcAIteratorT iter_a(block_A, lda, shared_a);
-    TileSrcBIteratorT iter_b(block_B, ldb, shared_b);
+    TileSrcAIteratorT iter_a(block_A, lda, lda, shared_a);
+    TileSrcBIteratorT iter_b(block_B, ldb, ldb, shared_b);
     TileResIteratorT iter_c(block_C, ldc);
     __syncthreads();
 
     BlockMmaT op;
     op(alpha, iter_a, iter_b, beta, iter_c);
 }
+
+
+template<typename GemmConfig, typename T = typename GemmConfig::type>
+COGITO_GLOBAL 
+void GemmSplitK_Kernel(int m, int n, int k, T alpha, T* A, int lda, T* B, int ldb, T beta, T* C, int ldc);
 
 } // namsespace detail
 
@@ -88,6 +95,4 @@ public:
     }
 };
 
-
-} // namespace general
-} // namespace cogito
+} // namespace cogito::blas

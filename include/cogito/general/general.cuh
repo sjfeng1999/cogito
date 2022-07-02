@@ -5,8 +5,7 @@
 
 #pragma once 
 
-namespace cogito {
-namespace general {
+namespace cogito::general {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -19,8 +18,7 @@ struct Reduce;
 template<typename T, template<typename> class BinaryOp>
 struct Scan;
 
-} // namespace general
-} // namespace cogito
+} // namespace cogito::general
 
 #include "cogito/general/elementwise/elementwise.cuh"
 #include "cogito/general/reduce/reduce.cuh"

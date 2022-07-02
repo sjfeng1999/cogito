@@ -8,17 +8,16 @@
 #include <cstdlib>
 #include "cogito/cogito.cuh"
 
-namespace cogito {
-namespace test {
+namespace cogito::test {
     
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
 bool verifyResult(T* array1, T* array2, int size, float epsilon=1e-2f) {
     float err = 0.0f;
-    for (int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i) {
         err = abs(static_cast<float>(array1[i] - array2[i]));
-        if (err > epsilon){
+        if (err > epsilon) {
             printf("Error pos:%3d  left:%.4f  right:%.4f\n", i, 
                                                              static_cast<float>(array1[i]), 
                                                              static_cast<float>(array2[i]));
@@ -29,16 +28,16 @@ bool verifyResult(T* array1, T* array2, int size, float epsilon=1e-2f) {
 }
 
 template<typename T>
-void initTensor(T* input, int size){
+void initTensor(T* input, int size) {
     std::srand(time(NULL));
-    for (int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i) {
         input[i] = static_cast<T>((std::rand() % 10) - 5);
     }
 }
 
 template<typename T>
-void printTensor(T* input, int size){
-    for (int i = 0; i < size; ++i){
+void printTensor(T* input, int size) {
+    for (int i = 0; i < size; ++i) {
         printf("%.1f, ", input[i]);
         if (i % 32 == 32 - 1) {
             printf("\n");
@@ -46,5 +45,4 @@ void printTensor(T* input, int size){
     }
 }
 
-} // namespace test
-} // namespace cogito
+} // namespace cogito::test

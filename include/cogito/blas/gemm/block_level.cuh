@@ -7,9 +7,7 @@
 
 #include "cogito/blas/gemm/warp_level.cuh"
 
-namespace cogito {
-namespace blas {
-namespace detail {
+namespace cogito::blas::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,8 +35,8 @@ public:
     TileSrcIterator() = delete;
     
     COGITO_DEVICE
-    TileSrcIterator(T* global_ptr, const int ldg, T* shared_ptr) : global_ptr_(global_ptr), ldg_(ldg), shared_ptr_(shared_ptr), loop(0) { 
-        total_loop = ldg_ / kTileHeight;
+    TileSrcIterator(T* global_ptr, const int ldg, const int k, T* shared_ptr) : global_ptr_(global_ptr), ldg_(ldg), shared_ptr_(shared_ptr), loop(0) { 
+        total_loop = k / kTileHeight;
         {   
             int tid = threadIdx.x;
             int tile_x, tile_y;
@@ -122,8 +120,8 @@ public:
     DoubleBufferTileSrcIterator() = delete;
     
     COGITO_DEVICE
-    DoubleBufferTileSrcIterator(T* global_ptr, const int ldg, T* shared_ptr) : global_ptr_(global_ptr), ldg_(ldg), shared_ptr_(shared_ptr), loop(0), shared_buf_offset_(0) { 
-        total_loop = ldg_ / kTileHeight;
+    DoubleBufferTileSrcIterator(T* global_ptr, const int ldg, const int k, T* shared_ptr) : global_ptr_(global_ptr), ldg_(ldg), shared_ptr_(shared_ptr), loop(0), shared_buf_offset_(0) { 
+        total_loop = k / kTileHeight;
         {   
             int tid = threadIdx.x;
             int tile_x, tile_y;
@@ -231,7 +229,7 @@ public:
 
 public:
     COGITO_DEVICE
-    void operator()(const T& alpha, TileSrcAIteratorT& tile_a, TileSrcBIteratorT& tile_b, const T& beta, TileResIteratorT& tile_c){
+    void operator()(const T& alpha, TileSrcAIteratorT& tile_a, TileSrcBIteratorT& tile_b, const T& beta, TileResIteratorT& tile_c) {
         
         FragmentSrcAIteratorT frag_a(tile_a.shared_ptr());
         FragmentSrcBIteratorT frag_b(tile_b.shared_ptr());
@@ -253,6 +251,4 @@ public:
     }
 };
 
-} // namespace detail
-} // namespace blas
-} // namespace cogito
+} // namespace cogito::blas::detail

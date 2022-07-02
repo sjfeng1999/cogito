@@ -8,8 +8,7 @@
 #include "cogito/cogito.cuh"
 #include "cogito/general/general.cuh"
 
-namespace cogito {
-namespace dnn {
+namespace cogito::dnn {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,23 +46,23 @@ template<typename T>
 struct PRelu {
 public:
     static constexpr int kBlockDimX = 256;
+
 public:
     cudaError_t operator()(const int batch_size, const int inner_size, const T* input, const T* alpha, T* output, cudaStream_t stream = nullptr) {
         
         dim3 bDim(kBlockDimX);
         dim3 gDim(batch_size);
 
-        if (inner_size % 4 == 0) {
+        if (inner_size % 4 == 0 or inner_size % 2 == 0) {
             detail::PReluKernel<T, kBlockDimX, 4><<<gDim, bDim, 0, stream>>>(batch_size, inner_size, input, alpha, output);
         } else if (inner_size % 2 == 0) {
             detail::PReluKernel<T, kBlockDimX, 2><<<gDim, bDim, 0, stream>>>(batch_size, inner_size, input, alpha, output);
         } else {
             detail::PReluKernel<T, kBlockDimX, 1><<<gDim, bDim, 0, stream>>>(batch_size, inner_size, input, alpha, output);
         }
-        
-        return cudaPeekAtLastError();
+
+        return general::ElementWise<T, detail::PReluOp>()(batch_size, inner_size, input, alpha, output, stream);
     }
 };
 
-} // namespace dnn
-} // namespace cogito
+} // namespace cogito::dnn

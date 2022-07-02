@@ -5,8 +5,7 @@
 
 #pragma once 
 
-namespace cogito {
-namespace dnn {
+namespace cogito::dnn {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -36,9 +35,7 @@ struct BatchNorm2d;
 template<typename T>
 struct LayerNorm2d;
 
-} // namespace dnn
-} // namespace cogito
-
+} // namespace cogito::dnn
 
 #include "cogito/dnn/activation/sigmoid.cuh"
 #include "cogito/dnn/activation/softmax.cuh"

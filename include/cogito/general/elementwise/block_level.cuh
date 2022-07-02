@@ -121,4 +121,4 @@ public:
 template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize>
 struct BlockElementWiseTwice;
 
-} // namespace cogito
+} // namespace cogito::general::detail

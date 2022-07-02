@@ -10,8 +10,7 @@
 
 #include "cogito/cogito.cuh"
 
-namespace cogito {
-namespace test {
+namespace cogito::test {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -45,10 +44,10 @@ public:
         KernelOp kernel_op;
         float elapsed = 0;
 
-        for (int i = 0; i < kWarmupTimes; ++i){
+        for (int i = 0; i < kWarmupTimes; ++i) {
             kernel_op(args...);
         }
-        for (int i = 0; i < kRepeatTimes; ++i){
+        for (int i = 0; i < kRepeatTimes; ++i) {
             cudaEventRecord(start);
             kernel_op(args...);
             cudaEventRecord(stop);
@@ -63,18 +62,15 @@ public:
         avgVal /= kRepeatTimes;
         res = (status == cudaSuccess) ? Status::kSuccess : Status::kUnknownError;
 
-        if (res == Status::kSuccess){
+        if (res == Status::kSuccess) {
             printf("    Elapsed >> min = %5.2f ms   max = %5.2f ms   avg = %5.2f ms     >> Glops = %5.2f GFlops/s\n", 
                 minVal, maxVal, avgVal, gflops * 1000 / avgVal);
         } else {
             printf("    >>> Some Error Occured. <<<\n");
         }
 #endif // COGITO_KERNEL_PROFILER 
-
         return res;
     }
 };
 
-
-} // namespace test
-} // namespace cogito
+} // namespace cogito::test

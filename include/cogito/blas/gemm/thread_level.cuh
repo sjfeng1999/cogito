@@ -6,10 +6,9 @@
 #pragma once 
 
 #include "cogito/tensor.cuh"
+#include "cogito/blas/axpy/thread_level.cuh"
 
-namespace cogito {
-namespace blas {
-namespace detail {
+namespace cogito::blas::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,18 +73,4 @@ public:
     }
 };
 
-template<typename T, int Size>
-struct ThreadScale {
-public:
-    COGITO_DEVICE
-    void operator()(const T& alpha, ShapedTensor<T, Size>& A) {
-        COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < Size; ++i) {
-            A[i] *= alpha;
-        }
-    }
-};
-
-} // namespace detail
-} // namespace blas
-} // namespace cogito
+} // namespace cogito::blas::detail

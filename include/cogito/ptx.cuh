@@ -16,7 +16,7 @@ namespace ptx {
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 COGITO_DEVICE 
-int32_t getClock(){
+int32_t getClock() {
     int32_t clock;
     asm volatile(
         "mov.u32    %0,     %%clock; \n\t"
@@ -27,7 +27,7 @@ int32_t getClock(){
 }
 
 COGITO_DEVICE 
-int32_t getSmid(){
+int32_t getSmid() {
     int32_t smid;
     asm volatile(
         "mov.u32    %0,     %%smid; \n\t"
@@ -38,7 +38,7 @@ int32_t getSmid(){
 }
 
 COGITO_DEVICE 
-int32_t getWarpid(){
+int32_t getWarpid() {
     int32_t warpid;
     asm volatile(
         "mov.u32    %0,     %%warpid; \n\t"
@@ -49,7 +49,7 @@ int32_t getWarpid(){
 }
 
 COGITO_DEVICE 
-int32_t getLaneid(){
+int32_t getLaneid() {
     int32_t laneid;
     asm volatile(
         "mov.u32    %0,     %%laneid; \n\t"
@@ -60,7 +60,7 @@ int32_t getLaneid(){
 }
 
 COGITO_DEVICE 
-void barSync(){
+void barSync() {
     asm volatile(
         "bar.sync   0; \n\t"
     );
@@ -170,14 +170,20 @@ void st_32b(void* dst, void* src) {
 cogito_load_128b(LoadPolicy::kCA, global.ca)
 cogito_load_128b(LoadPolicy::kCG, global.cg)
 cogito_load_128b(LoadPolicy::kCS, global.cs)
+cogito_load_128b(LoadPolicy::kShared, shared)
+cogito_load_128b(LoadPolicy::kConstant, const)
 
 cogito_load_64b(LoadPolicy::kCA, global.ca)
 cogito_load_64b(LoadPolicy::kCG, global.cg)
 cogito_load_64b(LoadPolicy::kCS, global.cs)
+cogito_load_64b(LoadPolicy::kShared, shared)
+cogito_load_64b(LoadPolicy::kConstant, const)
 
 cogito_load_32b(LoadPolicy::kCA, global.ca)
 cogito_load_32b(LoadPolicy::kCG, global.cg)
 cogito_load_32b(LoadPolicy::kCS, global.cs)
+cogito_load_32b(LoadPolicy::kShared, shared)
+cogito_load_32b(LoadPolicy::kConstant, const)
 
 
 #undef cogito_load_128b

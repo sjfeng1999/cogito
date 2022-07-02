@@ -12,8 +12,8 @@ namespace cogito::general::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize, int stripSize, bool Full>
-struct BlockElementWise {
+template<typename T, template<typename> class ElementwiseOp, int BlockDimX, int blockSize, int stripSize, bool Full>
+struct BlockElementwise {
 public:
     static constexpr bool kFull        = Full;
     static constexpr int kBlockDimX    = BlockDimX;
@@ -23,7 +23,7 @@ public:
     static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCS;
     static constexpr StorePolicy kStPolicy = StorePolicy::kWT;
     using ShapedTensorT        = ShapedTensor<T, kBlockSize>;
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kBlockSize>;
+    using ThreadElementwiseOpT = ThreadElementwise<T, ElementwiseOp, kBlockSize>;
 
 public:
     COGITO_DEVICE
@@ -32,7 +32,7 @@ public:
         int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        ThreadElementWiseOpT thread_op;
+        ThreadElementwiseOpT thread_op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kStripSize; ++i) {
@@ -55,7 +55,7 @@ public:
         int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        ThreadElementWiseOpT thread_op;
+        ThreadElementwiseOpT thread_op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kStripSize; ++i) {
@@ -74,8 +74,8 @@ public:
 };
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize>
-struct BlockElementWiseAll {
+template<typename T, template<typename> class ElementwiseOp, int BlockDimX, int blockSize>
+struct BlockElementwiseAll {
 public:
     static constexpr int kBlockDimX    = BlockDimX;
     static constexpr int kBlockSize    = blockSize;
@@ -83,7 +83,7 @@ public:
     static constexpr LoadPolicy  kLdPolicy = LoadPolicy::kCS;
     static constexpr StorePolicy kStPolicy = StorePolicy::kWT;
     using ShapedTensorT        = ShapedTensor<T, kBlockSize>;
-    using ThreadElementWiseOpT = ThreadElementWise<T, ElementWiseOp, kBlockSize>;
+    using ThreadElementwiseOpT = ThreadElementwise<T, ElementwiseOp, kBlockSize>;
 
 public:
     COGITO_DEVICE
@@ -92,7 +92,7 @@ public:
         int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        ThreadElementWiseOpT thread_op;
+        ThreadElementwiseOpT thread_op;
         
         for (; offset < size; offset += kWorkloadLine) {
             ThreadLd<T, kLdPolicy>::load(tensor, input + offset) ;
@@ -107,7 +107,7 @@ public:
         int offset = tid * kBlockSize;
 
         ShapedTensorT tensor;
-        ThreadElementWiseOpT thread_op;
+        ThreadElementwiseOpT thread_op;
 
         for (; offset < size; offset += kWorkloadLine) {
             ThreadLd<T, kLdPolicy>::load(tensor, input + offset);
@@ -118,7 +118,7 @@ public:
 };
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int blockSize>
-struct BlockElementWiseTwice;
+template<typename T, template<typename> class ElementwiseOp, int BlockDimX, int blockSize>
+struct BlockElementwiseTwice;
 
 } // namespace cogito::general::detail

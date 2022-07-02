@@ -26,7 +26,7 @@ public:
     using ShapedTensorT = ShapedTensor<T, kBlockSize>;
     using ReduceOpT     = ReduceOp<T>;
     using WarpReduceT   = WarpReduce<T, ReduceOp, kBlockSize>;
-    using ThreadReduceElementWiseOpT = ThreadElementWise<T, ReduceOp, kBlockSize>;
+    using ThreadReduceElementwiseOpT = ThreadElementwise<T, ReduceOp, kBlockSize>;
 
 public:
     COGITO_DEVICE 
@@ -40,7 +40,7 @@ public:
             ThreadLd<T>::load(input_tensor, input + offset);
             if constexpr (kStripSize > 1) {
                 ShapedTensorT tmp_tensor;
-                ThreadReduceElementWiseOpT element_reduce_op;
+                ThreadReduceElementwiseOpT element_reduce_op;
 
                 COGITO_PRAGMA_UNROLL
                 for (int i = 1; i < kStripSize; ++i) {
@@ -57,7 +57,7 @@ public:
                 ThreadLd<T>::load(input_tensor, idendity);
             }
             ShapedTensorT tmp_tensor;
-            ThreadReduceElementWiseOpT element_reduce_op;
+            ThreadReduceElementwiseOpT element_reduce_op;
 
             offset += kWorkloadLine;
             for (; offset < size; offset += kWorkloadLine) {
@@ -106,7 +106,7 @@ public:
     using ShapedTensorT = ShapedTensor<T, kBlockSize>;
     using ReduceOpT     = ReduceOp<T>;
     using WarpReduceT   = WarpReduce<T, ReduceOp, kBlockSize>;
-    using ThreadReduceElementWiseOpT = ThreadElementWise<T, ReduceOp, kBlockSize>;
+    using ThreadReduceElementwiseOpT = ThreadElementwise<T, ReduceOp, kBlockSize>;
 
 public:
     COGITO_DEVICE 
@@ -115,7 +115,7 @@ public:
         int offset = tid * kBlockSize;
 
         ShapedTensorT input_tensor, tmp_tensor;
-        ThreadReduceElementWiseOpT element_reduce_op;
+        ThreadReduceElementwiseOpT element_reduce_op;
         ReduceOpT reduce_op;
 
         const T idendity = ReduceOpT::kIdentity;

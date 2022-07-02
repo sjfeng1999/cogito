@@ -17,48 +17,48 @@ namespace cogito::general {
 
 namespace detail {
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int AlignSize = 1>
+template<typename T, template<typename> class ElementwiseOp, int BlockDimX, int AlignSize = 1>
 COGITO_KERNEL
-void ElementWiseKernel(const T* input, T* output, const int size) {
-    using BlockElementWiseFullT = BlockElementWise<T, ElementWiseOp, BlockDimX, 4, 1, true>;
-    using BlockElementWiseTailT = BlockElementWise<T, ElementWiseOp, BlockDimX, AlignSize, 1, false>;
+void ElementwiseKernel(const T* input, T* output, const int size) {
+    using BlockElementwiseFullT = BlockElementwise<T, ElementwiseOp, BlockDimX, 4, 1, true>;
+    using BlockElementwiseTailT = BlockElementwise<T, ElementwiseOp, BlockDimX, AlignSize, 1, false>;
 
     int ctaid = blockIdx.x;
-    int block_offset = ctaid * BlockElementWiseFullT::kWorkloadLine;
+    int block_offset = ctaid * BlockElementwiseFullT::kWorkloadLine;
 
     const T* block_input = input + block_offset;
     T* block_output = output + block_offset;
 
     if (ctaid == blockDim.x - 1) {
-        int tail = size % BlockElementWiseFullT::kWorkloadLine;
-        BlockElementWiseTailT block_op;
+        int tail = size % BlockElementwiseFullT::kWorkloadLine;
+        BlockElementwiseTailT block_op;
         block_op(block_input, block_output, tail);
     } else {
-        BlockElementWiseFullT block_op;
-        block_op(block_input, block_output, BlockElementWiseFullT::kWorkloadLine);
+        BlockElementwiseFullT block_op;
+        block_op(block_input, block_output, BlockElementwiseFullT::kWorkloadLine);
     }
 }
 
 
-template<typename T, template<typename> class ElementWiseOp, int BlockDimX, int AlignSize = 1>
+template<typename T, template<typename> class ElementwiseOp, int BlockDimX, int AlignSize = 1>
 COGITO_KERNEL
-void ElementWiseKernel(const T* input, T* output, const T operand, const int size) {
-    using BlockElementWiseFullT = BlockElementWise<T, ElementWiseOp, BlockDimX, 4, 1, true>;
-    using BlockElementWiseTailT = BlockElementWise<T, ElementWiseOp, BlockDimX, AlignSize, 1, false>;
+void ElementwiseKernel(const T* input, T* output, const T operand, const int size) {
+    using BlockElementwiseFullT = BlockElementwise<T, ElementwiseOp, BlockDimX, 4, 1, true>;
+    using BlockElementwiseTailT = BlockElementwise<T, ElementwiseOp, BlockDimX, AlignSize, 1, false>;
 
     int ctaid = blockIdx.x;
-    int block_offset = ctaid * BlockElementWiseFullT::kWorkloadLine;
+    int block_offset = ctaid * BlockElementwiseFullT::kWorkloadLine;
 
     const T* block_input = input + block_offset;
     T* block_output = output + block_offset;
 
     if (ctaid == blockDim.x - 1) {
-        int tail = size % BlockElementWiseFullT::kWorkloadLine;
-        BlockElementWiseTailT block_op;
+        int tail = size % BlockElementwiseFullT::kWorkloadLine;
+        BlockElementwiseTailT block_op;
         block_op(block_input, block_output, operand, tail);
     } else {
-        BlockElementWiseFullT block_op;
-        block_op(block_input, block_output, operand, BlockElementWiseFullT::kWorkloadLine);
+        BlockElementwiseFullT block_op;
+        block_op(block_input, block_output, operand, BlockElementwiseFullT::kWorkloadLine);
     }
 }
 
@@ -66,8 +66,8 @@ void ElementWiseKernel(const T* input, T* output, const T operand, const int siz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp>
-struct ElementWise {
+template<typename T, template<typename> class ElementwiseOp>
+struct Elementwise {
 public:
     static constexpr int kBlockDimX = 256;
     
@@ -77,11 +77,11 @@ public:
         dim3 gDim(UPPER_DIV(size, kBlockDimX * 4));
 
         if (size % 4 == 0) {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gDim, bDim, 0, stream>>>(input, output, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 4><<<gDim, bDim, 0, stream>>>(input, output, size);
         } else if (size % 2 == 0) {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gDim, bDim, 0, stream>>>(input, output, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 2><<<gDim, bDim, 0, stream>>>(input, output, size);
         } else {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gDim, bDim, 0, stream>>>(input, output, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 1><<<gDim, bDim, 0, stream>>>(input, output, size);
         }
         return Status::kSuccess;
     }
@@ -91,11 +91,11 @@ public:
         dim3 gDim(UPPER_DIV(size, kBlockDimX * 4));
 
         if (size % 4 == 0) {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 4><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 4><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
         } else if (size % 2 == 0) {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 2><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 2><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
         } else {
-            detail::ElementWiseKernel<T, ElementWiseOp, kBlockDimX, 1><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
+            detail::ElementwiseKernel<T, ElementwiseOp, kBlockDimX, 1><<<gDim, bDim, 0, stream>>>(input, output, operand, size);
         }
         return Status::kSuccess;
     }

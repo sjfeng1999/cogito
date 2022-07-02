@@ -10,7 +10,7 @@ namespace cogito::general {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T, template<typename> class UnaryOp>
-struct ElementWise;
+struct Elementwise;
 
 template<typename T, template<typename> class BinaryOp>
 struct Reduce;

@@ -9,18 +9,18 @@ namespace cogito::general::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, template<typename> class ElementWiseOp, int ItemsPerThread>
-struct ThreadElementWise {
+template<typename T, template<typename> class ElementwiseOp, int ItemsPerThread>
+struct ThreadElementwise {
 public:
     static constexpr int kItemsPerThread = ItemsPerThread;
     using ShapedTensorT  = ShapedTensor<T, kItemsPerThread>;
-    using ElementWiseOpT = ElementWiseOp<T>;
+    using ElementwiseOpT = ElementwiseOp<T>;
 
 public:
     template<typename... TensorList>
     COGITO_DEVICE
     void operator()(ShapedTensorT& output_tensor, const TensorList&... input_tensor) {
-        ElementWiseOpT op;
+        ElementwiseOpT op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kItemsPerThread; ++i) {
@@ -31,7 +31,7 @@ public:
     template<typename... TensorList>
     COGITO_DEVICE
     void operator()(ShapedTensorT& output_tensor, const T& operand, const TensorList&... input_tensor) {
-        ElementWiseOpT op;
+        ElementwiseOpT op;
 
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kItemsPerThread; ++i) {

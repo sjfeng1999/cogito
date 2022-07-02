@@ -7,15 +7,15 @@
 
 #include "unittest/general/fixture_general.cuh"
 
-TEST_P(GeneralFixture, ElementWiseUnaryTest){
-    using TestElementWiseOpT = cogito::general::ElementWise<float, Square>;
+TEST_P(GeneralFixture, ElementwiseUnaryTest){
+    using TestElementwiseOpT = cogito::general::Elementwise<float, Square>;
 
-    TestElementWiseOpT()(input_d, output_d, size);
+    TestElementwiseOpT()(input_d, output_d, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, output_d, size * sizeof(float), 
                                       cudaMemcpyDeviceToHost));
 
     gflops = 1.0 * size / (1024 * 1024 * 1024);
-    profiler.profile<TestElementWiseOpT>(gflops, input_d, output_d, size);
+    profiler.profile<TestElementwiseOpT>(gflops, input_d, output_d, size);
 
     Square<float> op;
     for (int i = 0; i < size; ++i){
@@ -24,16 +24,16 @@ TEST_P(GeneralFixture, ElementWiseUnaryTest){
     EXPECT_TRUE(cogito::test::verifyResult<float>(output_h, output_naive, size));
 };
 
-TEST_P(GeneralFixture, ElementWiseWithOperandTest){
-    using TestElementWiseOpT = cogito::general::ElementWise<float, Sub>;
+TEST_P(GeneralFixture, ElementwiseWithOperandTest){
+    using TestElementwiseOpT = cogito::general::Elementwise<float, Sub>;
     float operand = 24;
     
-    TestElementWiseOpT()(input_d, output_d, operand, size);
+    TestElementwiseOpT()(input_d, output_d, operand, size);
     EXPECT_EQ(cudaSuccess, cudaMemcpy(output_h, output_d, size * sizeof(float), 
                                       cudaMemcpyDeviceToHost));
 
     gflops = 1.0 * size / (1024 * 1024 * 1024);
-    profiler.profile<TestElementWiseOpT>(gflops, input_d, output_d, operand, size);
+    profiler.profile<TestElementwiseOpT>(gflops, input_d, output_d, operand, size);
     
     Sub<float> op;
     for (int i = 0; i < size; ++i){

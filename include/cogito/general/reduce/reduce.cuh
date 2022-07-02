@@ -8,43 +8,47 @@
 #include "cogito/general/reduce/block_level.cuh"
 #include "cogito/general/reduce/thread_level.cuh"
 
-#include <map>
-
-namespace cogito {
-namespace general {
+namespace cogito::general {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace detail {
 
-template<typename T, template<typename> class BinaryOp, int BlockDimX>
+template<typename T, template<typename> class BinaryOp, int BlockDimX, int AlignSize = 1>
 COGITO_KERNEL
-void ReduceSingleKernel(T* input, T* output, int size) {
-    using BlockReduceT = BlockReduce<T, BinaryOp, BlockDimX, 1>;
+void ReduceSingleKernel(const T* input, T* output, int size) {
+    using BlockReduceFullT = BlockReduce<T, BinaryOp, BlockDimX, 4, 1, true>;
+    using BlockReduceTailT = BlockReduce<T, BinaryOp, BlockDimX, AlignSize, 1, false>;
 
     int ctaid = blockIdx.x;
-    int block_offset = ctaid * BlockDimX;
+    int block_offset = ctaid * BlockReduceFullT::kWorkloadLine;
 
-    T* block_input = input + block_offset;
+    const T* block_input = input + block_offset;
     T* block_output = output + ctaid;
 
-    BlockReduceT op;
-    op(block_input, block_output, size);
+    if (ctaid == blockDim.x - 1) {
+        int tail = size % BlockReduceFullT::kWorkloadLine;
+        BlockReduceTailT block_op;
+        block_op(block_input, block_output, tail);
+    } else {
+        BlockReduceFullT block_op;
+        block_op(block_input, block_output, BlockReduceFullT::kWorkloadLine);
+    }
 }
 
 template<typename T, template<typename> class BinaryOp>
 COGITO_KERNEL
-void ReduceFinalKernel(T* input, T* output, int size) {
+void ReduceFinalKernel(const T* input, T* output, int size) {
     using BinaryOpT = BinaryOp<T>;
 
-    T val = input[0];
-
     BinaryOpT op;
+    T res = input[0];
+
     COGITO_PRAGMA_UNROLL
     for (int i = 1; i < size; ++i){
-        val = op(val, input[i]);
+        res = op(res, input[i]);
     }
-    *output = val;
+    *output = res;
 }
 
 } // namsespace detail
@@ -55,34 +59,25 @@ template<typename T, template<typename> class ReduceOp>
 struct Reduce {
 public:
     static constexpr int kBlockDimX = 256;
-    static constexpr int kVecLength = 1;
-    static constexpr int kBlockWorkload = kVecLength * kBlockDimX;
 
 public:
     Status operator()(T* input, T* output, int size, cudaStream_t stream = nullptr) {
-        int gridDimX = UPPER_DIV(size, kBlockWorkload);
-        
-        dim3 gridDim(gridDimX, 1, 1);
-        dim3 blockDim(kBlockDimX, 1, 1);
+        dim3 bDim(kBlockDimX);
+        dim3 gDim(UPPER_DIV(size, kBlockDimX * 4));
 
-        if (gridDimX == 1) {
-            auto func = detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX>;
-            func<<<gridDim, blockDim, 0, stream>>>(input, output, size);
-        
+        if (gDim.x == 1) {
+            detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gDim, bDim, 0, stream>>>(input, output, size);
         } else {
             T* global_workspace;
-            cudaMallocAsync(&global_workspace, sizeof(T) * gridDimX, stream);
+            cudaMallocAsync(&global_workspace, sizeof(T) * gDim.x, stream);
 
-            detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gridDim, blockDim, 0, stream>>>(input, global_workspace, size);
-            detail::ReduceFinalKernel<T, ReduceOp><<<1, 1>>>(global_workspace, output, gridDimX);
+            detail::ReduceSingleKernel<T, ReduceOp, kBlockDimX><<<gDim, bDim, 0, stream>>>(input, global_workspace, size);
+            detail::ReduceFinalKernel<T, ReduceOp><<<1, 1>>>(global_workspace, output, gDim.x);
 
             cudaFreeAsync(global_workspace, stream);
         }
-
         return Status::kSuccess;
     }
 };
 
-
-} // namespace general
-} // namespace cogito
+} // namespace cogito::general

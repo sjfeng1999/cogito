@@ -21,7 +21,7 @@
 template<typename T>
 struct Square {
     COGITO_HOST_DEVICE
-    T operator()(const T& input){
+    T operator()(const T& input) {
         return input * input;
     }
 };
@@ -29,7 +29,7 @@ struct Square {
 template<typename T>
 struct Sub {
     COGITO_HOST_DEVICE
-    T operator()(const T& input, const T& operand){
+    T operator()(const T& operand, const T& input) {
         return input - operand;
     }
 };
@@ -43,11 +43,18 @@ struct Add {
     }
 };
 
+template<typename T>
+struct Max {
+    COGITO_HOST_DEVICE
+    T operator()(const T& left, const T& right) {
+        return max(left, right);
+    }
+};
+
 
 class GeneralFixture : public testing::TestWithParam<int> {
 public:
     void SetUp() override {
-
         size = GetParam();
 
         input_h         = static_cast<float*>(malloc(sizeof(float) * size));
@@ -70,11 +77,9 @@ public:
     }
     
 protected:
-    float* input_h; 
-    float* input_d;
+    float *input_h, *input_d;
+    float *output_h, *output_d;
     float* output_naive;
-    float* output_h;
-    float* output_d;
     int size;
     float gflops;
     cogito::Status status;

@@ -47,6 +47,16 @@ enum class Status : uint8_t {
     kUnknownError,
 };
 
+enum class DataType : uint8_t {
+    kFloat32,
+    kTFloat32,  
+    kFloat64,
+    kFloat16, 
+    kBFloat16,
+    kInt32,
+    kInt8,
+};
+
 enum class LoadPolicy : uint8_t {
     kCA,          // cache at all level
     kCG,          // cache at global-level

@@ -1,12 +1,11 @@
 //
-//
-// n-D vector
+// N-d vector with static shape
+// 
 //
 
 #pragma once 
 
 #include <cstdint>
-#include <vector>
 #include <utility>
 #include <type_traits>
 
@@ -24,6 +23,7 @@ public:
     static constexpr int kSize        = mp::Product<Dims...>::value;
     static constexpr int kElementSize = sizeof(T);
     static_assert(mp::IsPow2<kElementSize>::value);
+    using type = T;
 
 private:
     cogito_device_reg mutable T data_[kSize];
@@ -32,16 +32,31 @@ public:
     ShapedTensor() = default;
     ~ShapedTensor() = default;
     ShapedTensor(const ShapedTensor& tensor) = default;
-    ShapedTensor(ShapedTensor&& tensor) = default;
+    ShapedTensor(ShapedTensor&& tensor) = delete;
+    ShapedTensor& operator=(const ShapedTensor& tensor) = default;
+    ShapedTensor& operator=(ShapedTensor&& tensor) = delete;
 
     COGITO_DEVICE 
-    ShapedTensor(const T& args...);
+    ShapedTensor(const T& val) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kSize; ++i) {
+            data_[i] = val;
+        }
+    }
 
     COGITO_DEVICE 
-    T& operator[](int pos) { return data_[pos]; }
+    ShapedTensor(const T (&input)[kSize]) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < kSize; ++i) {
+            data_[i] = input[i];
+        }
+    }
 
     COGITO_DEVICE 
-    const T& operator[](int pos) const { return data_[pos]; }
+    T& operator[](const int pos) { return data_[pos]; }
+
+    COGITO_DEVICE 
+    const T& operator[](const int pos) const { return data_[pos]; }
 
     COGITO_DEVICE
     T* data() { return data_; }
@@ -60,27 +75,10 @@ public:
     COGITO_DEVICE
     void setValue(const T& val) {
         COGITO_PRAGMA_UNROLL
-        for (int i = 0; i < kSize; ++i) {
-            data_[i] = val;
+        for (int i = 0; i < Length; ++i) {
+            data_[i + Start] = val;
         }
     }
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T, int... Dims>
-constexpr ShapedTensor<T, Dims...> make_ShapedTensor(T* data) {
-    return ShapedTensor<T, Dims...>(data);
-}
-
-template<int dim, typename T, int... Dims>
-constexpr int get_dims(ShapedTensor<T, Dims...> /* unuse */) {
-    return ShapedTensor<T, Dims...>::kDims[dim];
-}
-
-template<int pos, typename T, int... Dims>
-constexpr int& get(ShapedTensor<T, Dims...> tensor) {
-    return tensor[pos];
-}
 
 } // namespace cogito

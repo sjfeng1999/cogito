@@ -51,6 +51,8 @@ public:
         cudaMemcpy(B_d, B_h, nk * sizeof(float), cudaMemcpyHostToDevice);
         cudaMemcpy(C_d, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
         cudaMemcpy(C_std, C_h, mn * sizeof(float), cudaMemcpyHostToDevice);
+
+        cublasCreate(&cublas_handle);
     }
 
     void TearDown() override {
@@ -64,6 +66,8 @@ public:
         cudaFree(B_d);
         cudaFree(C_d);
         cudaFree(C_std);
+        
+        cublasDestroy(cublas_handle);
     }
 
 protected:
@@ -75,6 +79,7 @@ protected:
     float alpha, beta;
     float gflops;
     cudaError_t status;
+    cublasHandle_t cublas_handle;
     cogito::test::KernelProfiler profiler;
 };
 

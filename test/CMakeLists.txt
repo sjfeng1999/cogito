@@ -6,7 +6,6 @@ message(STATUS ">>>>>>>> COGITO TEST")
 message(STATUS ${TEST_SRC})
 message(STATUS "<<<<<<<<")
 
-
 set(TARGET_ARCH "-gencode arch=compute_75,code=sm_75")
 set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} ${TARGET_ARCH}")
 
@@ -28,6 +27,7 @@ target_link_libraries(cogito_test
   PRIVATE
     gtest 
     cublas
+    cudnn
 )
 
 set_target_properties(cogito_test 

@@ -9,14 +9,27 @@ namespace cogito::dnn {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+/*****************************************/
+// Activation
+/*****************************************/
+
 template<typename T>
 struct Sigmoid;
 
-template<typename T>
+enum class SoftmaxType {
+    kSharedInternal,
+    kDefault,
+};
+
+template<typename T, SoftmaxType type>
 struct Softmax;
 
 template<typename T>
 struct PRelu;
+
+/*****************************************/
+// Convolution
+/*****************************************/
 
 enum class ConvType {
     kImplicitGemm,
@@ -27,7 +40,9 @@ template<typename T, ConvType type>
 struct Convolution2d;
 
 
-// Norm
+/*****************************************/
+// Normalization
+/*****************************************/
 
 template<typename T>
 struct BatchNorm2d;

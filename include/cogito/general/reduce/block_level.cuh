@@ -110,7 +110,7 @@ public:
 
 public:
     COGITO_DEVICE 
-    void operator()(T* input, T* output, int size) {
+    void operator()(const T* input, T* output, int size) {
         int tid = threadIdx.x;
         int offset = tid * kBlockSize;
 

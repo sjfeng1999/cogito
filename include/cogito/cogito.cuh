@@ -92,6 +92,14 @@ struct Range2Type {
     static constexpr int end   = End;
 };
 
+template<int Val, int... Vals>
+struct Sum {
+    static constexpr int value = Val + Sum<Vals...>::value;
+};
+template<int Val>
+struct Sum<Val> {
+    static constexpr int value = Val;
+};
 
 template<int Val, int... Vals>
 struct Product {
@@ -105,6 +113,15 @@ struct Product<Val> {
 template<int Val>
 struct IsPow2 {
     static constexpr bool value = (Val & Val - 1) == 0;
+};
+
+template<int Val>
+struct Pow2 {
+    static constexpr int value = Pow2<(Val - 1)>::value << 1;
+};
+template<>
+struct Pow2<0> {
+    static constexpr int value = 1;
 };
 
 template<int Val>

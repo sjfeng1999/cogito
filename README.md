@@ -20,3 +20,4 @@
 - [ ] 实现dnn::conv
 - [ ] 实现splitK Gemm
 - [ ] 实现tensorcore Gemm 
+- [ ] 添加一些性能相关的static_assert

@@ -16,7 +16,7 @@ namespace cogito {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T, int... Dims>
-struct ShapedTensor {
+struct alignas(mp::Back<Dims...>::value * sizeof(T)) ShapedTensor {
 public:
     static constexpr int kRank        = sizeof...(Dims);
     static constexpr int kDims[]      = {Dims...};

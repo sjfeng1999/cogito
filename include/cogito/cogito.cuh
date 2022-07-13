@@ -44,6 +44,7 @@ constexpr int kWarpSize = 32;
 enum class Status : uint8_t {
     kSuccess,
     kTensorShapeMismatch,
+    kUnimplemented,
     kUnknownError,
 };
 
@@ -55,6 +56,12 @@ enum class DataType : uint8_t {
     kBFloat16,
     kInt32,
     kInt8,
+};
+
+enum class AlignType : uint8_t {
+    k128B,
+    k64B,
+    k32B,
 };
 
 enum class LoadPolicy : uint8_t {
@@ -77,6 +84,11 @@ enum class StorePolicy : uint8_t {
     kDefault,     // default global memory cache modifier
 };
 
+
+template<AlignType type>
+struct Chunk;
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace mp {
@@ -86,11 +98,13 @@ struct Int2Type {
     static constexpr int value = Val;
 };
 
+
 template<int Start, int End>
 struct Range2Type {
     static constexpr int start = Start;
     static constexpr int end   = End;
 };
+
 
 template<int Val, int... Vals>
 struct Sum {
@@ -101,6 +115,7 @@ struct Sum<Val> {
     static constexpr int value = Val;
 };
 
+
 template<int Val, int... Vals>
 struct Product {
     static constexpr int value = Val * Product<Vals...>::value;
@@ -110,10 +125,22 @@ struct Product<Val> {
     static constexpr int value = Val;
 };
 
+
+template<int Val, int... Vals>
+struct Back {
+    static constexpr int value = Back<Vals...>::value;
+};
+template<int Val>
+struct Back<Val> {
+    static constexpr int value = Val;
+};
+
+
 template<int Val>
 struct IsPow2 {
     static constexpr bool value = (Val & Val - 1) == 0;
 };
+
 
 template<int Val>
 struct Pow2 {
@@ -123,6 +150,7 @@ template<>
 struct Pow2<0> {
     static constexpr int value = 1;
 };
+
 
 template<int Val>
 struct Log2 {
@@ -134,6 +162,15 @@ struct Log2<1> {
     static constexpr int value = 0;
 };
 
+
+template<int ThreadCount>
+struct WarpMask {
+    static constexpr uint value = (1 << (ThreadCount - 1)) | WarpMask<ThreadCount - 1>::value;
+};
+template<>
+struct WarpMask<0> {
+    static constexpr uint value = 0;
+};
 
 } // namesapce mp
 } // namespace cogito

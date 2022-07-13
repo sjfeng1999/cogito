@@ -32,15 +32,16 @@ void initTensor(T* input, int size) {
     std::srand(time(NULL));
     for (int i = 0; i < size; ++i) {
         input[i] = static_cast<T>((std::rand() % 10) - 5);
+        input[i] = static_cast<T>(i % 0xff);
     }
 }
 
 template<typename T>
-void printTensor(T* input, int size) {
+void printTensor(T* input, int size, int split = 32) {
     for (int i = 0; i < size; ++i) {
         printf("%.1f, ", input[i]);
-        if (i % 32 == 32 - 1) {
-            printf("\n");
+        if (i % split == split - 1) {
+            printf("\n-------------------\n");
         }
     }
 }

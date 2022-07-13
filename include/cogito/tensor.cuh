@@ -45,10 +45,10 @@ public:
     }
 
     COGITO_DEVICE 
-    ShapedTensor(const T (&input)[kSize]) {
+    ShapedTensor(const T (&list)[kSize]) {
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < kSize; ++i) {
-            data_[i] = input[i];
+            data_[i] = list[i];
         }
     }
 
@@ -77,6 +77,15 @@ public:
         COGITO_PRAGMA_UNROLL
         for (int i = 0; i < Length; ++i) {
             data_[i + Start] = val;
+        }
+    }
+
+    template<int Start = 0, int Length = kSize>
+    COGITO_DEVICE
+    void setValue(const T (&list)[Length]) {
+        COGITO_PRAGMA_UNROLL
+        for (int i = 0; i < Length; ++i) {
+            data_[i + Start] = list[i];
         }
     }
 };
